@@ -1,0 +1,81 @@
+* ============================================================
+* Static CMOS digital primitives, sky130, min-length devices.
+* Used to build the PFD and feedback divider at transistor level.
+* Sizing: Wn=0.42um, Wp=1.0um (approx mobility-matched), L=0.15um
+* (sky130 minimum), series-stack devices widened to compensate.
+* ============================================================
+
+.subckt INV a y vdd vss
+Xp y a vdd vdd sky130_fd_pr__pfet_01v8 l=0.15 w=1.0
+Xn y a vss vss sky130_fd_pr__nfet_01v8 l=0.15 w=0.42
+.ends INV
+
+* Transmission gate: conducts a<->b when ctrl=1 (ctrlb=0 supplied by caller)
+.subckt TG a b ctrl ctrlb vdd vss
+Xn a ctrl b vss sky130_fd_pr__nfet_01v8 l=0.15 w=0.42
+Xp a ctrlb b vdd sky130_fd_pr__pfet_01v8 l=0.15 w=1.0
+.ends TG
+
+.subckt NAND2 a b y vdd vss
+Xp1 y a vdd vdd sky130_fd_pr__pfet_01v8 l=0.15 w=1.0
+Xp2 y b vdd vdd sky130_fd_pr__pfet_01v8 l=0.15 w=1.0
+Xn1 y a n1  vss sky130_fd_pr__nfet_01v8 l=0.15 w=0.84
+Xn2 n1 b vss vss sky130_fd_pr__nfet_01v8 l=0.15 w=0.84
+.ends NAND2
+
+.subckt NOR2 a b y vdd vss
+Xp1 y  a p1  vdd sky130_fd_pr__pfet_01v8 l=0.15 w=2.0
+Xp2 p1 b vdd vdd  sky130_fd_pr__pfet_01v8 l=0.15 w=2.0
+Xn1 y a vss vss sky130_fd_pr__nfet_01v8 l=0.15 w=0.42
+Xn2 y b vss vss sky130_fd_pr__nfet_01v8 l=0.15 w=0.42
+.ends NOR2
+
+.subckt AND2 a b y vdd vss
+Xnand a b yb vdd vss NAND2
+Xinv  yb y   vdd vss INV
+.ends AND2
+
+* Transparent latch: a=d when en=1 (transparent), holds when en=0.
+* Two real inverters in the storage loop (Xinv1, Xinv2) -- NOT one
+* inverter + a bare pass gate, which would only give one inversion
+* around the loop (astable, not bistable). Verified by hand before
+* first simulation, not discovered by debugging a broken sim.
+.subckt LATCH d en enb a vdd vss
+Xtg_in d  a en  enb vdd vss TG
+Xinv1  a  b     vdd vss INV
+Xinv2  b  c     vdd vss INV
+Xtg_fb c  a enb en  vdd vss TG
+.ends LATCH
+
+* Positive-edge-triggered D flip-flop: master transparent when clk=0,
+* slave transparent when clk=1 -> samples D on the rising edge of clk.
+.subckt DFF d clk q qbar vdd vss
+Xinvclk clk clkb vdd vss INV
+Xlatm d clkb clk m vdd vss LATCH
+Xlats m clk clkb s vdd vss LATCH
+Xbuf1 s qbar vdd vss INV
+Xbuf2 qbar q vdd vss INV
+.ends DFF
+
+* Toggle flip-flop: D tied to QBAR -> divide-by-2 on clk.
+.subckt TFF clk q vdd vss
+Xdff qbar clk q qbar vdd vss DFF
+.ends TFF
+
+* Rising-edge pulse generator: pulse HIGH for ~2 gate delays after
+* each rising edge of "in". No spurious pulse on the falling edge
+* (traced by hand: d3=0 when in falls, so AND(in=0,d3)=0).
+.subckt EDGEDET in pulse vdd vss
+Xd1 in d1 vdd vss INV
+Xd2 d1 d2 vdd vss INV
+Xd3 d2 d3 vdd vss INV
+Xand in d3 pulse vdd vss AND2
+.ends EDGEDET
+
+* Cross-coupled NOR SR latch, active-high S/R. S,R asserted together
+* only transiently in our usage (PFD reset overlapping a fresh set
+* pulse) -- not defended against as a hard requirement in this pass.
+.subckt SRLATCH s r q qb vdd vss
+Xnor1 r qb q  vdd vss NOR2
+Xnor2 s q  qb vdd vss NOR2
+.ends SRLATCH

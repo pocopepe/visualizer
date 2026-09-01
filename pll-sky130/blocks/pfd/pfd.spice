@@ -1,0 +1,18 @@
+* Tri-state phase-frequency detector.
+* Built from edge detectors + a cross-coupled NOR SR latch per arm,
+* NOT from resettable D-flip-flops -- avoids needing an async reset
+* input on the DFF (which would fight the DFF's own bistable storage
+* loop; considered and rejected during design, see charter/status).
+* Reset is delayed by 2 inverters so UP/DN are visible for a couple
+* gate delays before being cleared (standard dead-zone mitigation).
+.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/digital/digital_cells.spice"
+
+.subckt PFD ref div up dn vdd vss
+Xed_ref ref pulse_ref vdd vss EDGEDET
+Xed_div div pulse_div vdd vss EDGEDET
+Xsr_up  pulse_ref rst up upb vdd vss SRLATCH
+Xsr_dn  pulse_div rst dn dnb vdd vss SRLATCH
+Xand_reset up dn reset_fast vdd vss AND2
+Xrd1 reset_fast rd1 vdd vss INV
+Xrd2 rd1        rst vdd vss INV
+.ends PFD

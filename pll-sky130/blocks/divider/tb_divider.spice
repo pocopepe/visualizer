@@ -1,0 +1,17 @@
+* DIV8 standalone functional test: 200 MHz in -> expect 25 MHz out.
+.lib "__SPICE_MODELS__" tt
+.include "divider.spice"
+
+Vdd vdd 0 DC 1.8
+Vclk clk 0 PULSE(0 1.8 0 100p 100p 2.5n 5n)
+
+Xdiv clk qout vdd 0 DIV8
+
+.tran 10p 400n
+
+.control
+  run
+  wrdata results_div.txt v(clk) v(qout)
+  quit
+.endc
+.end

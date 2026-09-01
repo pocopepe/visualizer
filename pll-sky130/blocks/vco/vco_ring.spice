@@ -1,0 +1,46 @@
+* ============================================================
+* Ring-oscillator VCO, current-starved, sky130
+* Block: VCO (Review 1 deliverable)
+*
+* Topology: 5-stage current-starved inverter ring.
+* Bias generator: Vctrl -> Mnb (V-to-I) -> diode-connected Mpb
+*   mirrors Ibias into every stage's PMOS current source (vbiasp).
+*   Vctrl itself drives every stage's NMOS current source gate
+*   directly (vbiasn = vctrl), matched sizing to Mnb.
+*
+* Ports: vctrl vdd vss vout
+* Params:
+*   wn_inv/ln_inv, wp_inv/lp_inv   - switching devices per stage
+*   wcs/lcs                        - current-source devices (both rails + bias gen)
+* ============================================================
+
+.subckt VCO_STAGE in out vbiasp vbiasn vdd vss
++ wn_inv=1.0 ln_inv=0.5 wp_inv=2.0 lp_inv=0.5 wcs=2.0 lcs=0.5
+
+Xmp_cs  nodeA  vbiasp vdd    vdd  sky130_fd_pr__pfet_01v8 l={lcs}    w={wcs}
+Xmp_inv out    in     nodeA  vdd  sky130_fd_pr__pfet_01v8 l={lp_inv} w={wp_inv}
+Xmn_inv out    in     nodeB  vss  sky130_fd_pr__nfet_01v8 l={ln_inv} w={wn_inv}
+Xmn_cs  nodeB  vbiasn vss    vss  sky130_fd_pr__nfet_01v8 l={lcs}    w={wcs}
+
+.ends VCO_STAGE
+
+
+.subckt VCO_RING vctrl vdd vss vout
++ nstages=5 wn_inv=1.0 ln_inv=0.5 wp_inv=2.0 lp_inv=0.5 wcs=2.0 lcs=0.5
+
+* --- bias generator: Vctrl sets Ibias via Mnb, mirrored to Mpb -> vbiasp ---
+Xmnb vbiasp vctrl vss vss sky130_fd_pr__nfet_01v8 l={lcs} w={wcs}
+Xmpb vbiasp vbiasp vdd vdd sky130_fd_pr__pfet_01v8 l={lcs} w={wcs}
+
+* --- 5-stage ring (odd count enforced by instantiation below) ---
+Xs1 n5 n1 vbiasp vctrl vdd vss VCO_STAGE wn_inv={wn_inv} ln_inv={ln_inv} wp_inv={wp_inv} lp_inv={lp_inv} wcs={wcs} lcs={lcs}
+Xs2 n1 n2 vbiasp vctrl vdd vss VCO_STAGE wn_inv={wn_inv} ln_inv={ln_inv} wp_inv={wp_inv} lp_inv={lp_inv} wcs={wcs} lcs={lcs}
+Xs3 n2 n3 vbiasp vctrl vdd vss VCO_STAGE wn_inv={wn_inv} ln_inv={ln_inv} wp_inv={wp_inv} lp_inv={lp_inv} wcs={wcs} lcs={lcs}
+Xs4 n3 n4 vbiasp vctrl vdd vss VCO_STAGE wn_inv={wn_inv} ln_inv={ln_inv} wp_inv={wp_inv} lp_inv={lp_inv} wcs={wcs} lcs={lcs}
+Xs5 n4 n5 vbiasp vctrl vdd vss VCO_STAGE wn_inv={wn_inv} ln_inv={ln_inv} wp_inv={wp_inv} lp_inv={lp_inv} wcs={wcs} lcs={lcs}
+
+* startup helper: tiny cap to break the degenerate all-equal DC solution
+Cstart n1 vss 1f
+
+Eout vout vss n5 vss 1
+.ends VCO_RING

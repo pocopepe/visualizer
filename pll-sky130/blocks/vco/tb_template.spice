@@ -1,0 +1,44 @@
+* Testbench: VCO_RING free-running oscillation, single point
+* Generated from tb_template.spice -- do not hand-edit generated copies
+*
+* Rev2 (post-critique): staggered .ic to avoid synchronous cold-start
+* ringing on all 5 stages at once (was: uic with implicit 0V everywhere);
+* added series zero-volt ammeter Vsense for supply-current measurement
+* (Review 1 deliverable per charter: "f_osc(Vctrl), K_VCO, tuning range,
+* supply current" -- was missing).
+.lib "__SPICE_MODELS__" __CORNER__
+
+.include "vco_ring.spice"
+
+.temp __TEMP__
+.param VDD=1.8
+.param TSTOP=__TSTOP__
+.param TSKIP=0.5*TSTOP
+
+Vvdd_ideal vdd_i 0 DC {VDD}
+Vsense     vdd_i vdd DC 0
+Vctrl vctrl 0 DC __VCTRL__
+Xvco vctrl vdd 0 vout VCO_RING nstages=5 wn_inv=1.0 ln_inv=0.5 wp_inv=2.0 lp_inv=0.5 wcs=2.0 lcs=0.5
+
+* Staggered initial guess across the 5 ring nodes so all stages don't
+* switch synchronously from an identical cold-start state (F2 fix).
+.ic v(xvco.n1)=0 v(xvco.n2)=1.8 v(xvco.n3)=0 v(xvco.n4)=1.8 v(xvco.n5)=0
+
+* NOTE: brace param substitution ({TSTOP} etc.) only works reliably in a
+* top-level analysis statement, not inside the .control block's own `tran`
+* command -- so the analysis is queued here and executed via `run` below.
+.tran __TSTEP__ {TSTOP} uic
+* top-level .meas (not inside .control) so {TSKIP}/{TSTOP} brace params
+* actually resolve -- the control-block `meas` command failed on these
+* ("bad syntax, cannot evaluate right hand side of from=tskip") even though
+* the same params work fine in a top-level .tran.
+.meas tran i_avg_A avg i(vsense) from={TSKIP} to={TSTOP}
+
+.control
+  set temp=__TEMP__
+  run
+  wrdata __OUTFILE__ v(vout)
+  quit
+.endc
+
+.end

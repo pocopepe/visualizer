@@ -1,0 +1,26 @@
+* Charge pump -- FIRST-PASS IDEALIZED / BEHAVIORAL MODEL.
+* Deliberate scoping choice for the Review-1 closed-loop lock
+* demonstration: sources/sinks an ideal current gated by UP/DN, with
+* no transistor-level switches, no current-mirror mismatch, no charge
+* injection or clock feedthrough modeled. Real transistor-level charge
+* pump (needed for the Review 2 mismatch/Monte Carlo study, where
+* current mismatch is a first-order effect) is deferred -- verifying
+* loop dynamics against the analytical model comes first, per standard
+* PLL design sequencing.
+.subckt CHARGE_PUMP up dn ctrl vdd vss
++ icp=20u
+* Node order is (vss, ctrl), NOT (ctrl, vss) -- verified empirically with an
+* isolated cap-charging test first (see docs/loop_model.md note): ngspice's
+* B-source current convention charges the SECOND node when positive, the
+* naive (ctrl, vss) order actually discharged ctrl on UP, which is exactly
+* backwards and was the root cause of the first closed-loop run's failure
+* (vctrl ramped monotonically negative instead of locking).
+* (A "hold the charge pump off for 50ns" gate was tried here first, on the
+* hypothesis that the digital logic's cold start was glitching DN. It did
+* NOT fix the vctrl collapse -- which is what proved that hypothesis wrong:
+* the collapse was already complete well inside that 50ns window, so the
+* charge pump couldn't have been the cause. Real cause and fix: the loop
+* filter's internal node needs an .ic consistent with vctrl -- see
+* blocks/top/tb_closed_loop.spice.)
+Bcp vss ctrl I = '(V(up)>0.9 ? {icp} : 0) - (V(dn)>0.9 ? {icp} : 0)'
+.ends CHARGE_PUMP

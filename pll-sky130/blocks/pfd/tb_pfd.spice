@@ -1,0 +1,22 @@
+* PFD standalone functional test.
+* REF and DIV run at slightly different frequencies (20 MHz vs 18 MHz)
+* so their relative phase sweeps through the full 0-360 degree range
+* within one transient run (one beat period = 500ns) -- covers both
+* "REF leads" and "REF lags" cases without needing multiple sim runs.
+.lib "__SPICE_MODELS__" tt
+.include "pfd.spice"
+
+Vdd vdd 0 DC 1.8
+Vref ref 0 PULSE(0 1.8 0 100p 100p 24.5n 50n)
+Vdiv div 0 PULSE(0 1.8 0 100p 100p 27.28n 55.56n)
+
+Xpfd ref div up dn vdd 0 PFD
+
+.tran 20p 600n
+
+.control
+  run
+  wrdata results_pfd.txt v(ref) v(div) v(up) v(dn)
+  quit
+.endc
+.end

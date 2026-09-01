@@ -1,0 +1,8 @@
+* Feedback divider, divide-by-8: 3 cascaded toggle flip-flops.
+.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/digital/digital_cells.spice"
+
+.subckt DIV8 clkin qout vdd vss
+Xt1 clkin q1   vdd vss TFF
+Xt2 q1    q2   vdd vss TFF
+Xt3 q2    qout vdd vss TFF
+.ends DIV8

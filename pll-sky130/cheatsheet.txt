@@ -1,0 +1,145 @@
+======================================================================
+CHEATSHEET -- what this project actually is, in plain words
+======================================================================
+
+WHAT WE'RE BUILDING
+--------------------
+A PLL (phase-locked loop) is a circuit that takes a slow, cheap, accurate
+clock (like a crystal, "REF") and multiplies it up to a faster clock your
+chip actually needs -- while keeping that faster clock locked in step with
+the slow one. Basically every chip with wireless, video, or a fast digital
+core has one.
+
+The catch: the fast part (the VCO, "voltage controlled oscillator") drifts
+with temperature. Hot chip = wrong frequency, unless you compensate for it.
+That's the "temperature-compensated" part of the title.
+
+WHY OPEN SOURCE / SKY130
+--------------------------
+Normally you'd design this in Cadence Virtuoso, a very expensive commercial
+tool. We don't have a license at home. So instead we used:
+  - sky130 = a real, free chip-manufacturing process (SkyWater 130nm) that
+    Google/SkyWater made public. It's not a toy -- real chips get made on it.
+  - ngspice = a free circuit simulator (does the same job as Cadence's
+    "Spectre" simulator, just free and command-line only, no pretty GUI).
+  - We wrote the circuits as plain text files (SPICE netlists) by hand,
+    instead of drawing them in a schematic editor, because we have no GUI
+    tool set up. It's more typing, but it's the exact same circuit.
+
+Magic and KLayout (also free) will be used later for drawing the physical
+chip layout (the actual shapes that get manufactured).
+
+THE ACTUAL RESEARCH QUESTION (not just "build a PLL")
+--------------------------------------------------------
+Anyone can build a temperature-compensated PLL, it's been done and published
+already (we're not claiming that part is new). Our angle: when you're
+CANCELLING two big drifting numbers against each other to get a tiny leftover
+number (that's literally what "compensation" is), any small error in your
+simulator gets AMPLIFIED. Nobody has actually measured whether the free
+open-source tools are trustworthy enough to design that kind of cancellation
+circuit. We're measuring it, by building the same circuit twice -- once free
+(ngspice/sky130) and once in real Cadence/Spectre later -- and comparing.
+
+If they agree: good news for everyone who can't afford Cadence.
+If they disagree, especially more than expected: that's ALSO a real,
+publishable result (tells people how far they can trust the free tools).
+
+WHAT WE ACTUALLY BUILT SO FAR (Review 1, first 50%)
+------------------------------------------------------
+  REF (a clock) -> PFD -> Charge Pump -> Loop Filter -> VCO -> divide-by-8 -+
+                    ^                                                       |
+                    +---------------------------------------------------- -+
+
+  - VCO: the oscillator. Ring of 5 inverters chasing their own tail.
+    Runs faster when you feed it more voltage (Vctrl).
+  - PFD (phase-frequency detector): compares "REF ticked" vs "the VCO's
+    output, divided down, ticked" and says "speed up" (UP) or "slow down"
+    (DOWN).
+  - Charge pump: turns UP/DOWN into a tiny current that nudges a
+    capacitor's voltage up or down.
+  - Loop filter: just resistors/capacitors that smooth that voltage out
+    so it doesn't jerk around.
+  - Divider: counts the VCO's fast ticks and outputs 1 tick per 8 VCO
+    ticks, so the PFD can compare it fairly against the slower REF.
+
+  We built ALL of these as real transistors (not shortcuts) EXCEPT the
+  charge pump, which we made "ideal" on purpose for now (a placeholder
+  current source) -- that's a normal, standard thing to do early on, real
+  transistor switches come later once we're measuring manufacturing
+  imperfections (mismatch), which is a Review 2 thing, not Review 1.
+
+DID IT WORK?
+-------------
+Yes. The loop LOCKS -- meaning after you turn it on, the VCO's voltage
+settles down and stops changing, and the VCO's frequency matches what it's
+supposed to (226 MHz-ish, 8x a 28.275MHz reference). It took 577
+nanoseconds to settle. The spec said it had to happen in under 2000
+nanoseconds (2 microseconds). We're comfortably inside budget.
+
+We also checked the math (a pen-and-paper formula for how fast a PLL
+*should* lock) predicted ~450ns. Measured 577ns. Same ballpark -- good,
+that means our simulation isn't lying to us, it roughly agrees with
+theory.
+
+THE BIG NUMBERS, TRANSLATED
+------------------------------
+  K_VCO ~ 670 MHz per Volt
+    -> "how much does the oscillator speed up per extra volt you feed it."
+       Not a constant, it curves -- feed it more, it speeds up less and less
+       (diminishing returns), like pressing a gas pedal that's less
+       responsive the harder you push.
+
+  Uncompensated drift: 332 to 1070 ppm per degree C, depending on how the
+  manufacturing came out (called a "corner" -- ff=fast chips, tt=typical,
+  ss=slow chips, think of it like "best case / average / worst case" from
+  manufacturing variation, not from temperature itself)
+    -> without any fix, the oscillator's frequency changes by that many
+       parts-per-million for every 1 degree C change. Over a >3x range
+       depending on manufacturing luck. This is the drift our (not yet
+       built) compensation circuit needs to cancel out.
+
+  ppm = parts per million. 1 ppm drift on a 1,000,000 Hz signal = drifts
+  by 1 Hz. It's just a relative-error unit, like saying "0.0001%" but
+  friendlier to say out loud.
+
+THINGS WE CAUGHT AND FIXED (worth remembering, these were real bugs)
+------------------------------------------------------------------------
+1. A polarity bug: ngspice's way of saying "push this much current into
+   this wire" is backwards from what you'd guess. Found it by testing on
+   a single capacitor before touching the real circuit -- 30 seconds
+   instead of another 3-minute wrong guess.
+2. We told the simulator "start this voltage at 0.85V" but forgot to also
+   tell it to start a SECOND, related capacitor at a matching voltage.
+   Physics doesn't care what we meant -- it just redistributed the charge
+   between the two caps and our circuit's starting voltage collapsed to
+   basically nothing before the real circuit even got a chance to work.
+   One-line fix once we found it. First guess at the cause (a "digital
+   glitch") was wrong, and we proved it was wrong before chasing the real
+   cause -- that's a good habit, not a bad sign.
+
+SPECS WE INHERITED AND HAD TO CORRECT
+-----------------------------------------
+  "The output must be accurate to +-0.15 ppm" -- doesn't actually mean
+  anything for THIS kind of PLL, because once it's locked, the output
+  frequency is set exactly by the reference crystal and a whole-number
+  divider, not by anything we're designing. It's like specifying how
+  accurate a ruler is when the ruler's accuracy was never in question --
+  we replaced it with a number that actually measures what our circuit
+  contributes (the VCO's own drift, not the crystal's).
+
+  "The control voltage must be able to go as low as 0.27V" -- turns out
+  physically impossible for this oscillator design (the transistor
+  literally can't turn on that low). Not a mistake in our circuit, it's a
+  real physical limit of this approach. We adjusted the spec to match
+  reality (0.63V) instead of pretending the impossible number was fine.
+
+WHERE TO LOOK FOR MORE
+--------------------------
+  RESULTS.md               -- all the numbers + the research framing, short
+  docs/review1_summary.pdf -- 2-page version for showing a professor
+  docs/review1_report.pdf  -- the full 10-page detailed report
+  STATUS.md                -- what's done, what's next (Review 2, 3)
+  PROJECT_CHARTER.md       -- the "why," the locked decisions, the risks
+  results/vco/FINDINGS.md  -- VCO-specific deep dive
+  results/loop/FINDINGS.md -- closed-loop deep dive, the two bugs in detail
+  scripts/demo_review1.sh  -- run this to regenerate every number yourself

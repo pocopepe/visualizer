@@ -1,0 +1,329 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usepackage{listings}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\definecolor{navy}{RGB}{31,42,89}
+\definecolor{teal}{RGB}{20,110,120}
+\definecolor{findbg}{RGB}{240,246,248}
+\definecolor{decbg}{RGB}{245,242,232}
+\definecolor{riskbg}{RGB}{250,238,238}
+\definecolor{codebg}{RGB}{246,246,246}
+
+\titleformat{\section}{\Large\bfseries\color{navy}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries\color{teal}}{\thesubsection}{1em}{}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=teal,
+  urlcolor=teal,
+  citecolor=teal,
+  pdftitle={Temperature-Compensated PLL in sky130 -- Review 1 Report},
+  pdfauthor={Aaryan Dogra, Yugeshwaran, Viju Sanjai}
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+  xleftmargin=2pt,
+  framexleftmargin=5pt
+}
+
+\newtcolorbox{finding}[1][]{colback=findbg,colframe=teal,fonttitle=\bfseries,title={Finding},#1}
+\newtcolorbox{decision}[1][]{colback=decbg,colframe=navy,fonttitle=\bfseries,title={Decision},#1}
+\newtcolorbox{risk}[1][]{colback=riskbg,colframe=red!60!black,fonttitle=\bfseries,title={Open Risk},#1}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{gray}{Temperature-Compensated PLL in sky130 --- Review 1 Report}}
+\fancyhead[R]{\small\textcolor{gray}{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\begin{document}
+
+% ------------------------------------------------------------------
+\begin{titlepage}
+\centering
+\vspace*{1.5cm}
+{\small\textcolor{teal}{\bfseries REVIEW 1}}\\[0.3cm]
+{\Huge\bfseries\color{navy} Design of a Temperature-Compensated\\[0.2cm] PLL Frequency Synthesizer}\\[0.5cm]
+{\Large An Open-Source sky130 Design and Verification Flow,\\ Cross-Validated Against Commercial EDA}\\[1.5cm]
+
+\begin{tabular}{c}
+\textbf{Team} \\[0.2cm]
+Aaryan Dogra \quad 23BEC1032 \\
+Yugeshwaran \quad\ \ 23BEC1404 \\
+Viju Sanjai \quad\ \ \ 23BEC1306 \\[0.4cm]
+\textbf{Project Guide} \\
+Dr. B. Bindu \\[0.2cm]
+School of Electronics Engineering (SENSE)
+\end{tabular}
+
+\vfill
+{\small \today}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ------------------------------------------------------------------
+\section{Executive Summary}
+
+This report documents Review~1 of a project originally scoped as a Cadence Virtuoso/Spectre schematic-level PLL design (see the Zeroth Review deck, \emph{Frequency Synthesizer Presentation.pdf}). Two changes were made before implementation began, both driven by practical constraints and both strengthening the project rather than diluting it:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Tooling}: without a local Cadence license, the design flow was rebuilt entirely on open-source tools --- Xschem-style hand-written SPICE netlists, ngspice for simulation, Magic and KLayout reserved for the physical-design stage, all running headless (no GUI) on the SkyWater sky130 open PDK.
+  \item \textbf{Scope}: the original brief was schematic-and-simulation only, with no layout. This plan adds a full schematic-to-GDS flow, and reframes the project's contribution around a genuine, literature-verified research question rather than a reproduction of known circuit topologies.
+\end{itemize}
+
+Review~1 targeted 50\% completion: a working closed-loop PLL, transistor-level for every block except a deliberately idealized charge pump, simulated and characterized against a derived analytical model. \textbf{That target was met.} The loop locks in 577\,ns against a 2\,\textmu s specification, agreeing with the analytical prediction (450\,ns) to within the same order of magnitude. Two real simulation-setup bugs were found and fixed along the way (Section~\ref{sec:closedloop}), and two specification inconsistencies inherited from the original brief were caught, diagnosed, and resolved (Section~\ref{sec:decisions}).
+
+\begin{finding}
+The project's central research contribution is not the PLL circuit itself (a temperature-compensated ring-oscillator PLL is known, published silicon) but a quantified study of whether open-source EDA model fidelity survives \emph{cancellation-based} designs --- where a correction network subtracts two large temperature-dependent quantities to leave a small residual, amplifying simulator/model disagreement by roughly the compensation ratio. This is detailed in Section~\ref{sec:novelty}.
+\end{finding}
+
+% ------------------------------------------------------------------
+\section{Research Framing and Novelty}
+\label{sec:novelty}
+
+\subsection{The problem with the inherited specification}
+
+The Zeroth Review's headline target --- ``$\pm 0.15$\,ppm frequency stability across the temperature range'' --- is not physically meaningful for a reference-locked PLL. In lock, $f_{\text{out}} = N \cdot f_{\text{ref}}$ exactly; temperature does not move it while the loop stays locked, so ppm-level output stability is inherited from the reference crystal, not from anything the PLL itself contributes. What temperature actually degrades is: the VCO's free-running frequency (hence the required control voltage and lock range), $K_{VCO}$ (hence loop bandwidth and phase margin), lock time, and phase noise. The specification has been restated accordingly (Section~\ref{sec:decisions}).
+
+\subsection{What is \emph{not} novel here, stated plainly}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item A PTAT/CTAT-compensated ring-oscillator VCO inside a PLL: fabricated and published in 180\,nm CMOS (Ravi et al., \emph{Microelectronics Journal}, 2022), achieving $-1.5\%/+0.4\%$ over $-40$ to $120^\circ$C.
+  \item A PLL built with open-source tools in sky130: multiple existing repositories (e.g.\ the VSD-internship \texttt{apll\_01v8\_sky130} project, several Tiny\-Tapeout PLL submissions).
+  \item A fully open-source PLL with an LC-VCO: Sadhu et al.\ (SMACD 2026) built a 2.4\,GHz fractional-N LC-VCO PLL in the IHP SG13G2 PDK using Xschem/ngspice/KLayout/OpenEMS.
+  \item ``Open-source EDA compares reasonably to commercial tools'': established repeatedly for digital logic, and partially for analog.
+\end{itemize}
+
+\subsection{The gap this project occupies}
+
+The closest prior work, Freitas et al.\ (TWEPP 2025, \texttt{arXiv:2512.06122}), compares an open-source flow (Xschem+ngspice) against a commercial one (Virtuoso+Spectre) in the IHP SG13G2 PDK across three blocks, one of which is a differential current-starved ring-oscillator VCO --- close to this project's own VCO benchmark. Critically, their published results report the open-source flow's numbers for the VCO \emph{alone}; no quantified open-vs-commercial comparison exists for that block, only qualitative statements (``required more manual tuning,'' ``a slightly wider spread in oscillation metrics''). Their VCO is also open-loop and has no temperature compensation, no PVT sweep, and no Monte Carlo characterization.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+ & \shortstack{Quantified\\open-vs-commercial} & \shortstack{Closed-loop\\PLL} & \shortstack{Temperature\\compensation} & \shortstack{PVT +\\Monte Carlo} \\
+\midrule
+Freitas et al.\ 2025 & No (qualitative) & No & No & Digital blocks only \\
+Sadhu et al.\ 2026 & No & Yes & No & No \\
+\textbf{This project} & \textbf{Yes (planned)} & \textbf{Yes} & \textbf{Yes} & \textbf{Yes (planned)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The falsifiable hypothesis}
+
+Temperature compensation is a \emph{cancellation} problem: a correction network is sized so its temperature coefficient nearly cancels the VCO's own, leaving a residual drift one to two orders of magnitude smaller than either term. In such problems, simulator/model disagreement does not pass through proportionally --- it is amplified by roughly the compensation ratio.
+
+\begin{quote}
+\textbf{H1:} Let $\varepsilon_{\text{raw}}$ be the relative cross-flow (ngspice-vs-Spectre) disagreement on directly simulated quantities, and $C$ the compensation ratio (uncompensated drift / compensated residual drift). Then $\varepsilon_{\text{res}} \approx C \cdot \varepsilon_{\text{raw}}$ on the compensated residual --- implying a trust ceiling $C_{\max} \approx 1/\varepsilon_{\text{raw}}$ beyond which an open-source flow cannot be relied on to design a correction.
+\end{quote}
+
+Both outcomes of this test are publishable: confirmation gives the open-silicon community a concrete, transferable design rule; refutation is stronger evidence for open-source precision-analog viability than anything currently published. Neither outcome depends on the compensation \emph{circuit} being novel, which deliberately protects the thesis from being scooped on circuit design alone.
+
+% ------------------------------------------------------------------
+\section{Tooling and Environment}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Virtuoso component} & \textbf{Open-source replacement} \\
+\midrule
+Schematic Editor & Hand-written SPICE (Xschem-format netlists) \\
+Spectre (transient/AC) & ngspice-42 \\
+ADE Explorer & ngspice batch mode + Python post-processing \\
+ADE Assembler (corners/MC) & CACE (planned, Review 2) \\
+Spectre RF PSS/Pnoise & No open equivalent --- transient/jitter estimate \\
+Layout Suite & Magic 8.3.105 + KLayout 0.28.16 (Review 3) \\
+Assura/Calibre LVS & netgen (tooling gap identified, see Section~\ref{sec:risks}) \\
+PDK & SkyWater sky130B via \texttt{volare}, pinned commit \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Every tool runs headless from the command line: ngspice in \texttt{-b} batch mode, Python (no GUI backend) for waveform post-processing and plotting. The sky130 PDK was pulled via \texttt{volare} and pinned to a fixed commit hash for reproducibility. One tooling gap was found: Ubuntu's \texttt{netgen} package is the TU Vienna finite-element mesh generator, not Tim Edwards' IC-design LVS tool of the same name --- flagged for Review 3, not yet blocking.
+
+% ------------------------------------------------------------------
+\section{Block 1: Voltage-Controlled Oscillator}
+\label{sec:vco}
+
+\subsection{Topology}
+A 5-stage current-starved ring oscillator in sky130, with a diode-connected NMOS/PMOS bias generator converting $V_{\text{ctrl}}$ into a mirrored bias current for every stage's PMOS current source, and $V_{\text{ctrl}}$ driving each stage's NMOS current source directly.
+
+\subsection{An adversarial review pass, and what it changed}
+Before any number from the first simulation pass was trusted, the netlist, testbenches, and results were handed cold to an independent reviewer instance instructed to critique the work as a skeptical thesis-committee member would. It returned five must-fix findings, not style notes:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Amplitude extraction (\texttt{v\_min}/\texttt{v\_max}) was computed on the pre-skip window, contaminating a ``swings beyond the rails'' claim with startup transient.
+  \item Cold-start initial conditions had all 5 ring stages switching synchronously from an identical state --- a textbook way to manufacture spurious ringing.
+  \item A 4-period frequency estimate was reported with the same apparent confidence as a 99-period one.
+  \item Supply current --- an explicit checklist deliverable --- was simply missing.
+  \item $K_{VCO}$ and the temperature coefficient were both single two-point secants off a curve later shown to be measurably nonlinear, which would have silently contaminated the compensation-ratio measurement this whole project depends on.
+\end{enumerate}
+
+All five were fixed (staggered initial conditions, post-skip-only amplitude extraction, a low-confidence flag below 10 periods, an added current-sense measurement, and polynomial fits replacing secants) before any VCO number below was accepted.
+
+\subsection{Results}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Quantity} & \textbf{Value} & \textbf{Caveat} \\
+\midrule
+$K_{VCO}$ (fit derivative @ 0.9\,V, tt, 27$^\circ$C) & $\approx$670\,MHz/V & Curve is measurably nonlinear \\
+Uncompensated tempco, tt (secant, $-40\to85^\circ$C) & $+681$\,ppm/$^\circ$C & Local slope varies $3.4\times$ across range \\
+Uncompensated tempco, ss corner & $+1070$\,ppm/$^\circ$C & \\
+Uncompensated tempco, ff corner & $+332$\,ppm/$^\circ$C & \textbf{$>3\times$ spread across corners} \\
+Min.\ $V_{\text{ctrl}}$ for sustained oscillation & $\approx 0.6$--$0.65$\,V & Device-threshold-limited \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{finding}
+The uncompensated temperature coefficient varies by more than $3\times$ across process corners ($332$\,ppm/$^\circ$C at ff versus $1070$\,ppm/$^\circ$C at ss). A compensation network sized against the typical corner alone would be wrong by more than $3\times$ at a real corner.
+\end{finding}
+
+\begin{risk}
+The VCO does not sustain oscillation down to the originally specified $V_{\text{ctrl}}$ floor (0.27\,V, i.e.\ $0.15\cdot V_{DD}$). Measured minimum sustaining control voltage is $\approx$0.6--0.65\,V, and this is the \emph{best-behaved} corner/temperature --- cold temperature and the ss corner can only push this boundary higher. This is a genuine contradiction between a locked specification and measured data, resolved in Section~\ref{sec:decisions}.
+\end{risk}
+
+% ------------------------------------------------------------------
+\section{Blocks 2--4: PFD, Charge Pump, Loop Filter, Divider}
+
+\subsection{Phase-Frequency Detector}
+Built from rising-edge pulse generators feeding a pair of cross-coupled NOR SR-latches, rather than the more commonly diagrammed resettable-D-flip-flop structure. An async-resettable transmission-gate flip-flop was designed first and rejected: reliably forcing its stored state without fighting its own bistable feedback loop proved fiddly, while the edge-detector/SR-latch structure is a standard, simpler alternative with identical external behavior. Verified functionally by sweeping REF and DIV at slightly different frequencies (20\,MHz vs.\ 18\,MHz) so their relative phase drifts through a full cycle within one simulation, confirming UP/DN pulse widths track the phase relationship correctly in both directions.
+
+\subsection{Charge Pump --- a deliberate simplification}
+Modeled behaviorally (an ideal current source gated by UP/DN) rather than at transistor level. This is standard PLL design sequencing: verify loop dynamics against the analytical model with an ideal charge pump first, and only invest in transistor-level switches, current-mirror matching, and charge-injection modeling once mismatch is something the project is actually measuring --- which is Review 2 (Monte Carlo) territory, so no effort is wasted.
+
+\subsection{Loop Filter}
+A passive lead-lag network (R2 + C1 series, C2 shunt for ripple), with component values derived from a standard second-order charge-pump-PLL analytical model (Section~\ref{sec:loopmodel}).
+
+\subsection{Feedback Divider}
+A $\div 8$ chain of three toggle flip-flops. Built from a transmission-gate D-latch design that was hand-verified \emph{before} first simulation: an initial latch design used one inverter plus a bare pass gate in the storage loop, which gives only one inversion around the loop (astable, not bistable) --- a genuine design error caught by re-deriving the topology from first principles rather than by debugging a broken waveform. The corrected two-inverter design was verified functionally: measured division ratio 8.004 against a target of 8.000.
+
+% ------------------------------------------------------------------
+\section{Analytical Loop Model}
+\label{sec:loopmodel}
+
+Using the measured $K_{VCO} \approx 670$\,MHz/V, a nominal VCO operating point of 226.2\,MHz at $V_{\text{ctrl}}=0.9$\,V, a divider ratio $N=8$ (giving $f_{\text{ref}} = 28.275$\,MHz), and a charge pump current $I_{cp} = 20\,\mu$A, standard second-order type-II charge-pump-PLL design equations were solved for a target natural frequency $f_n \approx 2$\,MHz and damping $\zeta \approx 0.71$:
+
+\begin{align*}
+\omega_n^2 &= \frac{I_{cp} \cdot K_{VCO}}{N \cdot C_1} & \zeta &= \frac{R_2}{2}\sqrt{\frac{I_{cp} \cdot K_{VCO} \cdot C_1}{N}}
+\end{align*}
+
+giving $C_1 = 68$\,pF, $R_2 = 1.7$\,k$\Omega$, and $C_2 = C_1/10 = 6.8$\,pF (standard ripple-pole placement). Recomputing with these rounded values: $f_n \approx 1.98$\,MHz, $\zeta \approx 0.72$, loop bandwidth $\approx 2.85$\,MHz, phase margin $\approx 70$--$72^\circ$, and a predicted lock time of $\approx 450$\,ns (via the settling time constant $\tau = 1/(\zeta\omega_n) \approx 112$\,ns, $\approx 4\tau$ to settle).
+
+% ------------------------------------------------------------------
+\section{Closed-Loop Lock Demonstration}
+\label{sec:closedloop}
+
+The full loop (REF $\to$ PFD $\to$ Charge Pump $\to$ Loop Filter $\to$ VCO $\to \div8 \to$ back to PFD) was assembled and simulated at the tt corner, $27^\circ$C, starting from $V_{\text{ctrl}} = 0.85$\,V (a ``coarse-tuned start,'' inside the VCO's confirmed-oscillating range --- see the risk discussion below).
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Quantity} & \textbf{Measured} & \textbf{Target / Prediction} \\
+\midrule
+Lock time (settles within $\pm2\%$ of final value) & \textbf{577\,ns} & $<2\,\mu$s (spec); 450\,ns (analytical) \\
+Settled $V_{\text{ctrl}}$ & 0.902\,V & 0.9\,V design point \\
+Settled divider output frequency & 28.515\,MHz & 28.275\,MHz (0.85\% high) \\
+Settled VCO output frequency & 227.96\,MHz & 226.2\,MHz (0.78\% high) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The small residual frequency offset ($\approx$0.8\%) is consistent with normal charge-pump/PFD limit-cycle ripple in a real type-II CP-PLL. The gap between the measured 577\,ns and the analytical 450\,ns prediction is expected: the analytical model is a continuous-time linearization that does not capture the PFD's reset delay or the charge pump's discrete pumping action.
+
+\subsection{Two real bugs found and fixed}
+
+\textbf{SPICE current-source polarity.} The first attempt at the charge pump produced a control voltage that ramped monotonically negative regardless of UP/DN. Rather than guess at a fix against the full three-minute closed-loop simulation, the ambiguity was resolved with an isolated four-line test: charging a bare capacitor with a behavioral current source confirmed that ngspice's \texttt{B}-element convention (\texttt{B n1 n2 I=expr}) draws current \emph{out of} \texttt{n1} when positive --- the opposite of the naive reading. The node order was corrected accordingly.
+
+\textbf{Inconsistent capacitor initial condition.} After fixing the polarity, the loop still collapsed from its starting control voltage down to $\approx$0.1\,V within the first 40\,ns on every run. The first hypothesis --- that $\sim$30 unstaggered digital gate nodes in the PFD/divider were producing a startup glitch --- looked reasonable and was tested by adding a 50\,ns charge-pump hold gate. \emph{The collapse still happened, in full, inside that 50\,ns window}, which is what disproved the hypothesis rather than confirmed it: if the charge pump was provably silent and the collapse still occurred, the charge pump could not be the cause. The actual cause was simpler and easy to miss: an \texttt{.ic} was set on the control-voltage node but not on the loop filter's own internal node, which defaulted to 0\,V. With the charge pump idle, the two loop-filter capacitors simply redistributed their mismatched initial charge to $V_{\text{final}} = C_2 V_0/(C_1+C_2) \approx 0.077$\,V --- matching the observed collapse almost exactly. The fix was a one-line addition of a consistent initial condition.
+
+\begin{risk}
+The accepted lock result assumes the loop starts already inside the VCO's confirmed-oscillating range. A genuine cold start from 0\,V drives the charge pump into a multi-microsecond constant-current integration phase before the VCO begins oscillating at all and the divider starts toggling --- directly compounding the VCO lock-range finding from Section~\ref{sec:vco}. This is not yet solved; real PLLs typically address it with a separate frequency-acquisition-aid circuit, which is out of scope for Review 1 and flagged for Review 2.
+\end{risk}
+
+% ------------------------------------------------------------------
+\section{Decisions Made This Review}
+\label{sec:decisions}
+
+\begin{decision}
+\textbf{PDK}: SkyWater sky130, not the originally specified Cadence GPDK. GPDK is NDA-bound and cannot exist outside a Virtuoso seat. sky130 is the only open PDK with an officially sanctioned Cadence Education Kit / ADK, which the eventual Virtuoso cross-validation (Review 3) structurally requires.
+\end{decision}
+
+\begin{decision}
+\textbf{$V_{\text{ctrl}}$ lock-range floor} revised from $[0.15\cdot V_{DD}, 0.85\cdot V_{DD}] = [0.27\text{V}, 1.53\text{V}]$ to $[0.35\cdot V_{DD}, 0.85\cdot V_{DD}] \approx [0.63\text{V}, 1.53\text{V}]$. The original floor is device-threshold-limited for this topology (the NMOS current source's gate is driven directly by $V_{\text{ctrl}}$), not a sizing oversight; reaching lower would need a fundamentally different level-shifted control scheme, not justified by the specs in play.
+\end{decision}
+
+\begin{decision}
+\textbf{Compensation ratio $C$} locked as \emph{per-corner}, $C(\text{corner})$, rather than a single scalar --- a direct consequence of the $>3\times$ tempco spread measured across ff/tt/ss.
+\end{decision}
+
+\begin{decision}
+\textbf{Frequency stability target} restated from ``$\pm0.15$\,ppm'' (not physically meaningful for a locked PLL) to a residual VCO free-running drift target of \textbf{$<\pm0.3\%$ ($\approx\pm24$\,ppm/$^\circ$C)} over $-40$ to $+85^\circ$C, grounded against comparable published silicon (Ravi et al.\ 2022: $-1.5\%/+0.4\%$ in 180\,nm).
+\end{decision}
+
+% ------------------------------------------------------------------
+\section{Open Risks}
+\label{sec:risks}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Virtuoso/Cadence sky130 ADK access} is the single highest-severity risk: the entire cross-validation half of the research question depends on it, and it has not yet been confirmed with the department. This should be resolved before Review 2 concludes, not discovered as a blocker at Review 3.
+  \item \textbf{Cold-start acquisition} (Section~\ref{sec:closedloop}) is unresolved: either design a fast-acquisition charge-pump mode, or formally document the coarse-tuned-start assumption as a stated design constraint.
+  \item \textbf{netgen tooling gap}: the correct IC-design LVS tool needs to be built from source or obtained via a container image before Review 3's LVS step.
+  \item \textbf{PVT coverage} on the closed loop is currently a single point (tt, $27^\circ$C); the full corner$\times$temperature sweep is Review 2 scope via CACE.
+\end{itemize}
+
+% ------------------------------------------------------------------
+\section{Roadmap to Review 2 and Review 3}
+
+\textbf{Review 2 (target 75\%):} temperature-compensation network design targeting the per-corner $C(\text{corner})$ definition; full 5-corner PVT sweep via CACE; Monte Carlo mismatch characterization; a transistor-level charge pump (needed once mismatch is being measured); an ngspice-vs-Xyce cross-check as an independent-codebase parity measurement; a jitter-derived phase-noise estimate; and a figure-of-merit-normalized benchmark against the five references from the original literature survey.
+
+\textbf{Review 3 (target 100\%):} full layout in Magic with DRC closure, LVS via netgen, post-layout re-simulation, the Cadence/Virtuoso cross-validation arm (the schematic rebuilt independently against the sky130 Cadence ADK, run through true Spectre RF PSS/Pnoise analysis), the quantified parity tables ($\varepsilon_{\text{raw}}$, $\varepsilon_{\text{res}}$, $C$) that test the central H1 hypothesis, and a paper draft targeting a workshop venue such as SMACD or a FOSSi-affiliated track.
+
+% ------------------------------------------------------------------
+\section{References}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Freitas, E.\ M.\ V.\ et al., ``Using Open Source EDA Tools in ASICs for HEP: A Mixed Comparison,'' TWEPP 2025 / \texttt{arXiv:2512.06122}.
+  \item ``A 2.4\,GHz LC-VCO Fractional-N Phase Locked Loop Open-Source Design in 130-nm BiCMOS,'' SMACD 2026 / \texttt{arXiv:2607.08852}.
+  \item ``Temperature compensated ring oscillator based VCO,'' \emph{Microelectronics Journal}, 2022.
+  \item ``Low Power Fast Locking PLL Frequency Synthesizer with Temperature Compensation,'' EAME 2018, Atlantis Press.
+  \item ``A 12GHz 67\% Tuning Range, 0.37ps RJrms PLL with LC-VCO Temperature Compensation Scheme in 0.13\textmu m CMOS,'' IEEE, 2014.
+  \item ``Design of an Integrated CMOS PLL Frequency Synthesizer,'' IEEE Xplore.
+  \item ``Temperature and Power Supply Compensated CMOS Clock Circuit Based on Ring Oscillator,'' \emph{Electronics (MDPI)}, vol.\ 12, no.\ 3, 2023.
+  \item ``Phase-Locked Loop (PLL)-Based Frequency Synthesizer for Digital Systems Driving,'' Cadence Virtuoso GPDK 45nm implementation, ResearchGate.
+\end{enumerate}
+
+\vspace{1cm}
+\noindent\textit{Full source, testbenches, raw simulation data, and the living project charter are maintained in the project repository (\texttt{PROJECT\_CHARTER.md}, \texttt{pll-sky130/STATUS.md}, and per-block \texttt{FINDINGS.md} files).}
+
+\end{document}
