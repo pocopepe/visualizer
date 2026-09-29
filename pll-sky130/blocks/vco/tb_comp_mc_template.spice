@@ -1,0 +1,37 @@
+* Same as tb_comp_template.spice but with device mismatch enabled
+* (mc_mm_switch=1) and a fixed random seed set FIRST, before any analysis --
+* verified by isolated test that `set rndseed=X` must be the first .control
+* command in its own ngspice process to actually perturb agauss() draws;
+* mid-script reseeding within one process does NOT re-draw (same lesson as
+* the temperature-substitution issue in tb_template.spice: parse-time-bound
+* values need a fresh process, not a runtime command).
+.lib "__SPICE_MODELS__" __CORNER__
+.param mc_mm_switch=1
+
+.include "vco_ring.spice"
+
+.temp __TEMP__
+.param VDD=1.8
+.param TSTOP=__TSTOP__
+.param TSKIP=0.5*TSTOP
+
+Vvdd_ideal vdd_i 0 DC {VDD}
+Vsense     vdd_i vdd DC 0
+Vctrl_nom vctrl_nom 0 DC __VCTRL__
+Bcomp vctrl vctrl_nom V = '__K1__*(__TEMP__-27) + __K2__*(__TEMP__-27)*(__TEMP__-27)'
+Xvco vctrl vdd 0 vout VCO_RING nstages=5 wn_inv=1.0 ln_inv=0.5 wp_inv=2.0 lp_inv=0.5 wcs=2.0 lcs=0.5
+
+.ic v(xvco.n1)=0 v(xvco.n2)=1.8 v(xvco.n3)=0 v(xvco.n4)=1.8 v(xvco.n5)=0
+
+.tran __TSTEP__ {TSTOP} uic
+.meas tran i_avg_A avg i(vsense) from={TSKIP} to={TSTOP}
+
+.control
+  set rndseed=__SEED__
+  set temp=__TEMP__
+  run
+  wrdata __OUTFILE__ v(vout)
+  quit
+.endc
+
+.end

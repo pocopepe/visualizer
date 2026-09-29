@@ -169,7 +169,7 @@ def main(sweep_dir, csv_out):
     # sweep planned for Review 2, just a check that nothing qualitatively
     # different is happening before compensation-network design starts.
     print("\n-- Corner-shape spot check (Vctrl=0.9V, -40/27/85C only) --")
-    for corner in ("ss", "tt", "ff"):
+    for corner in ("ss", "sf", "tt", "fs", "ff"):
         pts = sorted([r for r in rows if ok(r) and abs(r["vctrl_V"] - 0.9) < 1e-6
                       and r["corner"] == corner], key=lambda r: r["temp_C"])
         if len(pts) < 2:

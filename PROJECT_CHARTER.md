@@ -91,6 +91,18 @@ Our defensible novelty, stated precisely:
 
 Note that novelty #1–#3 do **not** depend on our compensation circuit being novel. This is deliberate and it is what makes the project safe: we are not betting the thesis on out-designing published silicon.
 
+### 3.4 Second research axis: does curvature-matched compensation help, specifically here? (added 2026-09-29)
+
+Review 1 measured that the VCO's uncompensated tempco is not constant — local slope varies 3.4× across -40→85°C (steeper cold, flatter hot; a concave curve, consistent with BSIM mobility/threshold temperature behavior). A standard first-order PTAT/CTAT network (Ravi 2022, our own baseline) only cancels the linear component, leaving a curvature-shaped residual. This raised an obvious question: does adding a second-order (curvature-matched) term meaningfully reduce that residual, and is that worth the extra circuit complexity?
+
+**Novelty check before committing to this as a headline claim (per standing practice — see memory: verify novelty before proposing research):** a dedicated research pass found **US Patent 9,748,962 B2 (Infineon Technologies AG, filed 2015, granted 2017), "Systems and methods for oscillators using quadratic temperature compensation."** It combines a linear PTAT term with a squared (quadratic) term via a translinear squarer, over the same -40→85°C range, explicitly stating "a linear temperature compensation may not compensate for second order temperature drift." **The general idea — add a quadratic term to a linear PTAT/CTAT compensator — is not novel and is patented.** We do not claim it. Curvature compensation is also decades-standard practice in bandgap references and temperature sensors (already excluded from our novelty claims in §3.1).
+
+**What the same research pass confirmed is still open:** the Infineon patent is explicitly generic/non-PLL (it positions itself as a *lower-cost alternative to* PLL-based stabilization, and is exemplified at 24 GHz, almost certainly LC/varactor-tuned, not a ring oscillator). None of the published ring-oscillator temperature-compensation papers found (Ravi 2022; Li/Du 2022; the 2022 IEEE ultra-low-power ring-osc paper; Zhang 2016) go past first order. No paper or patent found does curvature compensation of an oscillator in an open-source PDK — the closest adjacent effort (an open sky130 bandgap project) lists curvature correction as still-outstanding engineering work.
+
+**Locked framing (narrow, defensible, composite):** we are not claiming "second-order VCO compensation" as novel. We claim: *quantifying, with statistical rigor (Monte Carlo + hypothesis testing, not a single spec number), whether a curvature-matched second-order network meaningfully outperforms first-order compensation, specifically for a ring-oscillator VCO inside a closed-loop PLL, in an open-source-simulated flow.* The composite (ring-VCO + closed-loop PLL + open PDK + statistically-validated quantification) is the unclaimed part, not the existence of quadratic compensation. Cite the Infineon patent in the related-work section of any writeup — a reviewer or examiner who knows this literature will find it if we don't cite it ourselves.
+
+This axis is deliberately independent of the H1 cross-flow parity study (§2.1/§3.3): it produces a real, defensible result on its own even if Virtuoso access falls through, and it reuses the exact compensation-strength sweep (§9 risk R5) that H1 already needed for its (C, ε) regression — same simulation campaign serves both.
+
 ---
 
 ## 4. A technical correction to the Zeroth Review spec

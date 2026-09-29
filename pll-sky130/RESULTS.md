@@ -76,3 +76,51 @@ Loop filter: R2=1.7kΩ, C1=68pF, C2=6.8pF, Icp=20µA → predicted fn≈1.98MHz,
 - Closed-loop lock is a single point (tt, 27°C) — full PVT sweep is Review 2.
 - No phase noise / PSS analysis — not available in open-source tools (confirmed independently by Sadhu et al. 2026); Review 2 uses a transient/jitter estimate, Review 3 gets the real number from Spectre RF.
 - Cold start from 0V drives a multi-microsecond acquisition dead zone (undocumented fix, flagged for Review 2) — the accepted lock result starts from a coarse-tuned V_ctrl=0.85V.
+
+---
+
+# Review 2 (in progress, 2026-09-29)
+
+## Second research axis: does curvature-matched compensation actually help?
+
+Novelty-checked before committing to this (see `PROJECT_CHARTER.md` §3.4): a 2017 Infineon patent (US 9,748,962 B2) already covers generic linear+quadratic oscillator compensation — **not novel on its own**. What's still open and is our actual claim: whether it's worth it *specifically for a ring-VCO inside a closed-loop PLL, in an open PDK*, quantified statistically rather than as a single spec number. The patent explicitly excludes the PLL case; no ring-oscillator paper found goes past first-order; no open-PDK implementation found.
+
+### Compensation network results (tt corner, idealized behavioral model — see `docs/compensation_model.md`)
+
+| Arm | Span, -40→85°C | vs baseline |
+|---|---|---|
+| Baseline (uncompensated) | 8.51% | — |
+| 1st-order (PTAT/CTAT-equivalent) | 3.04% | 2.80× better |
+| 2nd-order, naive analytically-derived k2 | 4.49% | **worse than 1st-order** |
+| 2nd-order, empirically refined | **1.11%** | 7.67× better than baseline, 2.7× better than 1st-order |
+
+**The naive-2nd-order-is-worse result is itself real, reportable content**, not noise: the small-signal derivation of the quadratic coefficient assumes constant K_VCO, which breaks down because K_VCO is itself measurably nonlinear (see the VCO tuning curve above). Refitting the coefficients against the *measured* post-1st-order residual (zero extra simulation — reused existing data) fixed it. Full writeup: `results/comp/FINDINGS.md`.
+
+## Full 5-corner grid — corrects Review 1's spot-check
+
+Review 1 only spot-checked 3 of 5 sky130 corners. All 5 now run (tt/ff/ss/**sf/fs**):
+
+| Corner | Uncompensated tempco |
+|---|---|
+| sf | **+112 ppm/°C** |
+| ff | +332 ppm/°C |
+| tt | +681 ppm/°C |
+| ss | +1070 ppm/°C |
+| fs | **+1399 ppm/°C** |
+
+**Real spread is 12.5× (112-1399 ppm/°C), not the 3.4× reported in Review 1** — the worst corner (fs) wasn't checked at all. Full data: `results/vco/FINDINGS_GRID5CORNER.md`, `results/vco/grid5corner.csv`.
+
+## Statistical methodology (this is what "heavy hypothesis testing" means here)
+
+No scipy in this environment — `scripts/stats.py` hand-rolls a paired t-test, Wilcoxon signed-rank (normal approximation), and OLS regression with a slope confidence interval, self-checked against known answers. Methodology sourced from a dedicated research pass, not invented ad hoc — see `docs/stats_methodology.md` for the reasoning (paired > unpaired given fixed SPICE seeds; report CI-excludes-zero instead of a p-value; regression needs ≥6-10 distinct points, not 3-4).
+
+Monte Carlo mismatch pass: **n=12 seeds** (tt corner, 3 compensation arms, paired). This is explicitly a first pass — the methodology research recommends a pilot of n≈30 before sizing a final run; n=12 is below that, done under time constraints, and should not be read as a statistically saturated result. Results:
+
+<!-- MC_RESULTS_PLACEHOLDER -->
+
+## What's still open for Review 2
+
+- Compensation coefficients are derived/refined against tt only — given the 12.5× corner spread just found, per-corner refinement is required, not optional, before claiming the compensation result generalizes.
+- H1 (ε_res ≈ C·ε_raw) still needs ≥6-10 distinct compensation-ratio (C) values for a defensible regression — currently have 2 (1st-order, 2nd-order). Extend the α-strength sweep in `docs/compensation_model.md`.
+- Monte Carlo at proper sample size (n≈30+, sized off this pilot's variance).
+- Transistor-level charge pump and compensation network (both still idealized behavioral models) — needed before mismatch numbers mean anything beyond methodology demonstration.

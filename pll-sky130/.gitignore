@@ -22,3 +22,15 @@ docs/*.toc
 results/vco/sweep_results_demo.csv
 results/loop/run_demo.txt
 results/loop/demo_summary.json
+results/vco/grid5corner/*.cir
+results/vco/grid5corner/*.log
+results/vco/grid5corner/*.txt
+results/comp/phase1/*.cir
+results/comp/phase1/*.log
+results/comp/phase1/*.txt
+results/comp/phase1_refined/*.cir
+results/comp/phase1_refined/*.log
+results/comp/phase1_refined/*.txt
+results/mc/*.cir
+results/mc/*.log
+results/mc/*.txt

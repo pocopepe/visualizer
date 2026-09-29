@@ -28,17 +28,24 @@ Last updated: 2026-08-27. Milestones per `PROJECT_CHARTER.md` §8. Update this f
 ### The two decisions flagged in the previous update — now resolved
 1. **V_ctrl lock-range floor.** Charter §4 originally specified [0.15·VDD, 0.85·VDD] = [0.27V, 1.53V]. Measured minimum sustaining Vctrl for this ring-VCO topology is ~0.6-0.65V (device-threshold-limited: the NMOS current source's gate is driven directly by Vctrl, so it physically cannot conduct meaningfully below ~Vtn). **Decision: revise the floor to [0.35·VDD, 0.85·VDD] ≈ [0.63V, 1.53V]**, matching what this topology actually delivers with margin, rather than redesigning the bias generator (a fundamentally different level-shifted control scheme would be needed to go lower, and it's not needed for the specs in play). Flag this revision to Dr. Bindu alongside the ±0.15ppm restatement from `PROJECT_CHARTER.md` §4 — same category of correction (measured reality vs. an inherited number).
 2. **Compensation ratio `C`.** Given the >3× tempco spread across corners (ff/tt/ss: 332/681/1070 ppm/°C), **decision: `C` is defined per-corner, `C(corner)`, not as a single scalar**, carried into the Review 2 compensation-network design and the H1 parity test.
+   **Update 2026-09-29: this was an undercount.** Full 5-corner grid (all of tt/ff/ss/sf/fs, not the 3-corner spot-check) shows the real spread is **112 ppm/°C (sf) to 1399 ppm/°C (fs) — 12.5×**, not 3.4×. The worst corner (fs) wasn't in Review 1's spot-check at all. See `results/vco/FINDINGS_GRID5CORNER.md`. Strengthens decision 2 further; doesn't change it.
 
 ### A consequence of decision 1, worth carrying into Review 2 explicitly
 `results/loop/FINDINGS.md` documents that a cold start *below* the (now-revised) Vctrl floor drives the loop into a multi-microsecond charge-pump-integration dead zone before the divider even starts toggling. The accepted closed-loop result starts from `.ic v(vctrl)=0.85V`, i.e. assumes the loop is already inside its valid range at power-up (a "coarse-tuned start," common in real PLLs via a separate acquisition-aid circuit that's out of scope here). Real cold-start-from-0V behavior is not yet a solved problem in this design — noted, not hidden.
 
-## Review 2 checklist (target 75%) — not started, listed for continuity
-- [ ] Temperature-compensation network designed and integrated, targeting `C(corner)` per the decision above
-- [ ] Full PVT sweep via CACE, -40→+85°C, all 5 corners (this pass only spot-checked ss/ff at 3 temps each, and only on the standalone VCO — the closed loop is tt/27°C/single-point only so far)
-- [ ] Monte Carlo mismatch: mean ± σ on residual drift, lock time, jitter
+## Review 2 checklist (target 75%) — in progress, 2026-09-29
+- [x] Full VCO PVT grid, **all 5 corners** (tt/ff/ss/sf/fs) × full Vctrl sweep × full temp sweep, 65 points — `results/vco/grid5corner.csv`, `results/vco/FINDINGS_GRID5CORNER.md`. Corrects Review 1's 3-corner spot-check: real spread is 12.5× (112-1399 ppm/°C), not 3.4×.
+- [x] Second research axis added: curvature-matched (2nd-order) temperature compensation, novelty-checked against prior art (Infineon patent 9,748,962 B2 found and cited — narrowed our claim accordingly) — `PROJECT_CHARTER.md` §3.4.
+- [x] Temperature-compensation network (idealized behavioral model, tt corner): baseline 8.51% span → 1st-order 3.04% → naive 2nd-order 4.49% (worse — real finding, see below) → empirically-refined 2nd-order **1.11%** (7.67× better than baseline). `results/comp/FINDINGS.md`, `docs/compensation_model.md`.
+- [x] Statistical methodology researched and implemented: `scripts/stats.py` (paired t-test, Wilcoxon signed-rank, OLS regression w/ slope CI, MC sample-size formula), `docs/stats_methodology.md`.
+- [ ] Monte Carlo mismatch pass running (n=12 seeds, tt corner, 3 compensation arms × 3 temps = 108 sims) — **n=12 is a first pass, below the recommended pilot n≈30**; re-run at proper sample size before final report. `scripts/analyze_mc.py` ready to run on completion.
+- [ ] Per-corner compensation coefficient refinement (current k1/k2 derived from tt only; 12.5× corner spread means this will underperform at ss/sf/fs/ff without refitting)
+- [ ] H1 regression needs ≥6-10 distinct C (compensation ratio) values, not the current 2 (1st-order vs 2nd-order) — extend the α-strength sweep (`docs/compensation_model.md`)
+- [ ] Full PVT sweep via CACE (still using hand-rolled sweep scripts, not CACE itself — works, but CACE would give a more standard datasheet-style report)
 - [ ] Sensitivity / tornado analysis
 - [ ] Jitter-derived phase-noise estimate across temperature (needs a noise source — none of today's sims have one)
-- [ ] Transistor-level charge pump (replacing the idealized behavioral model — needed now for mismatch to mean anything)
+- [ ] Transistor-level charge pump (replacing the idealized behavioral model — needed once MC mismatch is being taken seriously as a final number, not a methodology demo)
+- [ ] Transistor-level compensation network (replacing the idealized behavioral B-source correction — PTAT + squaring-cell realization, once a design point is chosen)
 - [ ] ε_raw measured ngspice vs Xyce
 - [ ] FoM-normalized benchmark table vs. refs [1]-[5]
 - [ ] Cold-start acquisition behavior — either fix (faster acquisition-mode charge pump current) or formally accept the coarse-tuned-start assumption and document it as a stated design constraint

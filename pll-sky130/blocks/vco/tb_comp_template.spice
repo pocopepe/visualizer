@@ -1,0 +1,45 @@
+* Testbench: VCO_RING with a parameterized temperature-compensation
+* correction voltage in series with Vctrl.
+*
+* Compensation model (deliberately idealized/behavioral, same staging
+* choice as blocks/charge_pump/charge_pump.spice: verify whether 1st-order
+* vs 2nd-order (curvature-matched) compensation is worth building in
+* transistors BEFORE spending design time on the transistor-level PTAT/
+* squaring cell -- see docs/compensation_model.md for the coefficient
+* derivation from the Review-1 measured f_osc(T) fit).
+*
+*   vctrl_eff = vctrl_nom + k1*(T-27) + k2*(T-27)^2
+*
+* k1,k2 are baked in at generation time (like __TEMP__ etc.) rather than
+* read from a live ngspice temperature variable -- `temper`/mid-script
+* `temp` changes were tested and don't reliably propagate into a B-source
+* per-analysis in this ngspice build, so this template follows the same
+* proven per-point-netlist pattern as tb_template.spice instead.
+.lib "__SPICE_MODELS__" __CORNER__
+
+.include "vco_ring.spice"
+
+.temp __TEMP__
+.param VDD=1.8
+.param TSTOP=__TSTOP__
+.param TSKIP=0.5*TSTOP
+
+Vvdd_ideal vdd_i 0 DC {VDD}
+Vsense     vdd_i vdd DC 0
+Vctrl_nom vctrl_nom 0 DC __VCTRL__
+Bcomp vctrl vctrl_nom V = '__K1__*(__TEMP__-27) + __K2__*(__TEMP__-27)*(__TEMP__-27)'
+Xvco vctrl vdd 0 vout VCO_RING nstages=5 wn_inv=1.0 ln_inv=0.5 wp_inv=2.0 lp_inv=0.5 wcs=2.0 lcs=0.5
+
+.ic v(xvco.n1)=0 v(xvco.n2)=1.8 v(xvco.n3)=0 v(xvco.n4)=1.8 v(xvco.n5)=0
+
+.tran __TSTEP__ {TSTOP} uic
+.meas tran i_avg_A avg i(vsense) from={TSKIP} to={TSTOP}
+
+.control
+  set temp=__TEMP__
+  run
+  wrdata __OUTFILE__ v(vout)
+  quit
+.endc
+
+.end
