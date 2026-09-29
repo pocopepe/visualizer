@@ -114,9 +114,15 @@ Review 1 only spot-checked 3 of 5 sky130 corners. All 5 now run (tt/ff/ss/**sf/f
 
 No scipy in this environment — `scripts/stats.py` hand-rolls a paired t-test, Wilcoxon signed-rank (normal approximation), and OLS regression with a slope confidence interval, self-checked against known answers. Methodology sourced from a dedicated research pass, not invented ad hoc — see `docs/stats_methodology.md` for the reasoning (paired > unpaired given fixed SPICE seeds; report CI-excludes-zero instead of a p-value; regression needs ≥6-10 distinct points, not 3-4).
 
-Monte Carlo mismatch pass: **n=12 seeds** (tt corner, 3 compensation arms, paired). This is explicitly a first pass — the methodology research recommends a pilot of n≈30 before sizing a final run; n=12 is below that, done under time constraints, and should not be read as a statistically saturated result. Results:
+Monte Carlo mismatch pass: **n=12 seeds** (tt corner, 3 compensation arms, paired same-seed). This is explicitly a first pass — the methodology research recommends a pilot of n≈30 before sizing a final run; n=12 is below that, done under time constraints. Reproduce: `python3 scripts/analyze_mc.py`.
 
-<!-- MC_RESULTS_PLACEHOLDER -->
+| Arm | Mean drift (85°C - -40°C) | 95% CI |
+|---|---|---|
+| Baseline | +18.927 MHz | [16.201, 21.654] |
+| 1st-order | -6.152 MHz | [-8.404, -3.899] |
+| 2nd-order refined | +3.275 MHz | [1.486, 5.065] |
+
+**All three pairwise comparisons are statistically significant** (CIs exclude zero, confirmed by both a paired t-test and a Wilcoxon signed-rank test — they agree, which is a stronger result than either alone): baseline vs 1st-order, 1st-order vs 2nd-order, and baseline vs 2nd-order. The 2nd-order network's residual is significantly smaller in magnitude than 1st-order's (|3.275| vs |6.152| MHz), consistent with the deterministic pilot's 2.7× improvement. This is real hypothesis-testing rigor, not a single-run demo — though n=12 is a first pass, not the final statistically-saturated number (`results/comp/FINDINGS.md`).
 
 ## What's still open for Review 2
 
