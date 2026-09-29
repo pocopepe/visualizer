@@ -46,9 +46,9 @@ Either way we have a result. This is the main reason to build the project around
 
 | Claim | Why it's not novel |
 |---|---|
-| A temperature-compensated ring VCO using PTAT bias current | Standard technique. [Ravi et al., *Microelectronics Journal* 2022](https://www.sciencedirect.com/science/article/abs/pii/S1434841122000929) fabricated exactly this in 180nm — PTAT-compensated ring VCO inside a PLL, −1.5%/+0.4% over −40→120°C. |
+| A temperature-compensated ring VCO using PTAT bias current | Standard technique. [Souliotis et al., *AEU Int. J. Electron. Commun.* 2022](https://www.sciencedirect.com/science/article/abs/pii/S1434841122000929) fabricated exactly this in 180nm — PTAT-compensated ring VCO inside a PLL, −1.5%/+0.4% over −40→120°C. |
 | A PLL in sky130 built with open-source tools | Already exists several times over — [ashokn414/apll_01v8_sky130](https://github.com/ashokn414/apll_01v8_sky130) (VSD internship), [TinyTapeout Tiny PLL](https://tinytapeout.com/chips/ttsky25a/tt_um_tiny_pll), and others. |
-| A fully open-source PLL with an LC-VCO | Done — [Sadhu et al., SMACD 2026](https://arxiv.org/html/2607.08852v1), 2.4 GHz fractional-N PLL in IHP SG13G2, Xschem/ngspice/KLayout/OpenEMS. |
+| A fully open-source PLL with an LC-VCO | Done — [Thiriloganathan et al., SMACD 2026](https://arxiv.org/html/2607.08852v1), 2.4 GHz fractional-N PLL in IHP SG13G2, Xschem/ngspice/KLayout/OpenEMS. |
 | "Open-source EDA compares favourably to commercial tools" | Done for digital logic repeatedly, and partially for analog — see below. |
 
 **We must state all of the above as prior art in the paper.** Claiming any of it as our contribution is how a reviewer kills the paper in one line.
@@ -64,7 +64,7 @@ Either way we have a result. This is the main reason to build the project around
 - **No** temperature compensation. **No** Monte Carlo on the analog block. **No** phase noise or jitter.
 - Stated future work: "expand to more blocks and include silicon measurements."
 
-**[Sadhu et al., SMACD 2026](https://arxiv.org/html/2607.08852v1)** — 2.4 GHz fractional-N LC-VCO PLL, IHP SG13G2, fully open-source.
+**[Thiriloganathan et al., SMACD 2026](https://arxiv.org/html/2607.08852v1)** — 2.4 GHz fractional-N LC-VCO PLL, IHP SG13G2, fully open-source.
 
 - A complete open-source PLL, so the "can open tools build a PLL" question is answered.
 - **No** temperature compensation, **no** PVT or Monte Carlo characterization, **no** comparison against commercial tools.
@@ -78,7 +78,7 @@ The two closest works are complementary, and neither closes the gap:
                     open-vs-commercial      closed-loop      temperature      PVT +
                     QUANTIFIED analog       PLL              compensation     Monte Carlo
 Freitas 2025            no (qualitative)     no               no               digital only
-Sadhu 2026              no                   yes              no               no
+Thiriloganathan 2026              no                   yes              no               no
 THIS PROJECT            yes                  yes              yes              yes
 ```
 
@@ -93,11 +93,11 @@ Note that novelty #1–#3 do **not** depend on our compensation circuit being no
 
 ### 3.4 Second research axis: does curvature-matched compensation help, specifically here? (added 2026-09-29)
 
-Review 1 measured that the VCO's uncompensated tempco is not constant — local slope varies 3.4× across -40→85°C (steeper cold, flatter hot; a concave curve, consistent with BSIM mobility/threshold temperature behavior). A standard first-order PTAT/CTAT network (Ravi 2022, our own baseline) only cancels the linear component, leaving a curvature-shaped residual. This raised an obvious question: does adding a second-order (curvature-matched) term meaningfully reduce that residual, and is that worth the extra circuit complexity?
+Review 1 measured that the VCO's uncompensated tempco is not constant — local slope varies 3.4× across -40→85°C (steeper cold, flatter hot; a concave curve, consistent with BSIM mobility/threshold temperature behavior). A standard first-order PTAT/CTAT network (Souliotis 2022, our own baseline) only cancels the linear component, leaving a curvature-shaped residual. This raised an obvious question: does adding a second-order (curvature-matched) term meaningfully reduce that residual, and is that worth the extra circuit complexity?
 
 **Novelty check before committing to this as a headline claim (per standing practice — see memory: verify novelty before proposing research):** a dedicated research pass found **US Patent 9,748,962 B2 (Infineon Technologies AG, filed 2015, granted 2017), "Systems and methods for oscillators using quadratic temperature compensation."** It combines a linear PTAT term with a squared (quadratic) term via a translinear squarer, over the same -40→85°C range, explicitly stating "a linear temperature compensation may not compensate for second order temperature drift." **The general idea — add a quadratic term to a linear PTAT/CTAT compensator — is not novel and is patented.** We do not claim it. Curvature compensation is also decades-standard practice in bandgap references and temperature sensors (already excluded from our novelty claims in §3.1).
 
-**What the same research pass confirmed is still open:** the Infineon patent is explicitly generic/non-PLL (it positions itself as a *lower-cost alternative to* PLL-based stabilization, and is exemplified at 24 GHz, almost certainly LC/varactor-tuned, not a ring oscillator). None of the published ring-oscillator temperature-compensation papers found (Ravi 2022; Li/Du 2022; the 2022 IEEE ultra-low-power ring-osc paper; Zhang 2016) go past first order. No paper or patent found does curvature compensation of an oscillator in an open-source PDK — the closest adjacent effort (an open sky130 bandgap project) lists curvature correction as still-outstanding engineering work.
+**What the same research pass confirmed is still open:** the Infineon patent is explicitly generic/non-PLL (it positions itself as a *lower-cost alternative to* PLL-based stabilization, and is exemplified at 24 GHz, almost certainly LC/varactor-tuned, not a ring oscillator). None of the published ring-oscillator temperature-compensation papers found (Souliotis 2022; Li/Du 2022; the 2022 IEEE ultra-low-power ring-osc paper; Zhang 2016) go past first order. No paper or patent found does curvature compensation of an oscillator in an open-source PDK — the closest adjacent effort (an open sky130 bandgap project) lists curvature correction as still-outstanding engineering work.
 
 **Locked framing (narrow, defensible, composite):** we are not claiming "second-order VCO compensation" as novel. We claim: *quantifying, with statistical rigor (Monte Carlo + hypothesis testing, not a single spec number), whether a curvature-matched second-order network meaningfully outperforms first-order compensation, specifically for a ring-oscillator VCO inside a closed-loop PLL, in an open-source-simulated flow.* The composite (ring-VCO + closed-loop PLL + open PDK + statistically-validated quantification) is the unclaimed part, not the existence of quadratic compensation. Cite the Infineon patent in the related-work section of any writeup — a reviewer or examiner who knows this literature will find it if we don't cite it ourselves.
 
@@ -122,7 +122,7 @@ What temperature *actually* degrades in a locked PLL, and what compensation actu
 
 **Proposed restatement of the target:**
 
-- **Primary:** residual VCO free-running drift over −40→+85 °C reduced by ≥10× versus uncompensated. Published comparable silicon ([Ravi 2022](https://www.sciencedirect.com/science/article/abs/pii/S1434841122000929)) achieves −1.5%/+0.4% in 180nm, so a target of **< ±0.3% (≈ ±24 ppm/°C)** is ambitious but grounded. `±0.15 ppm` is TCXO/crystal territory and is not achievable from a compensated ring oscillator.
+- **Primary:** residual VCO free-running drift over −40→+85 °C reduced by ≥10× versus uncompensated. Published comparable silicon ([Souliotis 2022](https://www.sciencedirect.com/science/article/abs/pii/S1434841122000929)) achieves −1.5%/+0.4% in 180nm, so a target of **< ±0.3% (≈ ±24 ppm/°C)** is ambitious but grounded. `±0.15 ppm` is TCXO/crystal territory and is not achievable from a compensated ring oscillator.
 - **Loop-level:** V_ctrl stays within **[0.35·VDD, 0.85·VDD] ≈ [0.63V, 1.53V]** across all corners and temperatures — *revised down from an original [0.15·VDD, 0.85·VDD] floor after simulation showed this ring-VCO topology is device-threshold-limited and doesn't sustain oscillation below ~0.6-0.65V; see decision log 2026-08-27 and `pll-sky130/STATUS.md`*; lock time < 2 µs (keep from PDF, **confirmed achievable: 577ns measured at the nominal tt/27°C point**, see `pll-sky130/results/loop/FINDINGS.md`); K_VCO variation < ±20% across temp.
 - Keep phase noise < −80 dBc/Hz @ 10 kHz as a target, **explicitly labelled as transient-jitter-derived estimate**, not a PSS/Pnoise measurement.
 
@@ -236,7 +236,7 @@ If work starts happening in the ❌ list, we have drifted. Come back to this doc
 |---|---|---|---|
 | R1 | **No Cadence Virtuoso access materializes** — this is the premise of the whole project and the parity study needs it | **High** | Confirm access with Dr. Bindu / lab **before Review 1**, not at Review 3. Fallback: ngspice-vs-Xyce parity (independent codebases, same PDK models) still tests H1, just with a weaker second arm. Second fallback: compare against published silicon measurements from refs. The hypothesis survives both; only the strength of the claim drops. **This is the #1 risk — resolve it early.** |
 | R2 | sky130 Cadence ADK not obtainable by our institution | Medium | Confirm alongside R1. Fallback: build a minimal Virtuoso-side model setup from open sky130 BSIM decks (models are the same silicon-calibrated decks; the ADK is packaging + symbols + layout rules). |
-| R3 | No PSS/Pnoise in open tools | Medium | Known and already designed around: transient-jitter estimation, honestly labelled. This limitation is itself a *finding* we report, corroborated by Sadhu 2026. |
+| R3 | No PSS/Pnoise in open tools | Medium | Known and already designed around: transient-jitter estimation, honestly labelled. This limitation is itself a *finding* we report, corroborated by Thiriloganathan 2026. |
 | R4 | ngspice convergence problems on the closed loop | Medium | Xyce as alternate engine (D7); relax reltol, use `.ic`, staged startup. |
 | R5 | Compensation ratio `C` too small to test H1 meaningfully | Medium | Need `C ≳ 10` for amplification to be visible above noise. If compensation underperforms, deliberately sweep compensation *strength* to generate a range of `C` values — this actually makes the H1 test **better** (a curve instead of a point). |
 | R6 | Scope creep into layout automation / fractional-N / second PDK | Medium | §7 exists for exactly this. |
@@ -269,7 +269,7 @@ If work starts happening in the ❌ list, we have drifted. Come back to this doc
 |---|---|---|
 | 2026-08-27 | GPDK → sky130 | Forced by licence availability; sky130 chosen over IHP SG13G2 / GF180 for its official Cadence ADK path |
 | 2026-08-27 | Ring VCO over LC VCO | Spec doesn't need LC; avoids thin inductor-model coverage; keeps focus on research question |
-| 2026-08-27 | Research framing set to cancellation-fidelity (H1) | After finding Freitas 2025 publishes no quantified analog parity numbers and Sadhu 2026 has no temp comp / no commercial comparison |
+| 2026-08-27 | Research framing set to cancellation-fidelity (H1) | After finding Freitas 2025 publishes no quantified analog parity numbers and Thiriloganathan 2026 has no temp comp / no commercial comparison |
 | 2026-08-27 | ±0.15 ppm target flagged for restatement | Not physically meaningful for a reference-locked PLL — see §4. **Pending Dr. Bindu's approval.** |
 | 2026-08-27 | Integer-N locked; fractional-N out of scope | Scope control |
 | 2026-08-27 | VCO baseline simulated (rev1), adversarially critiqued, revised (rev2) | See `pll-sky130/results/vco/FINDINGS.md`. Real numbers: K_VCO ≈ 670 MHz/V (fit @ 0.9V, nonlinear curve); uncompensated tempco +681 ppm/°C (tt secant), but +332 to +1070 ppm/°C across ff/ss — over 3× spread, meaning `C` likely needs to be per-corner, not scalar. **Open problem surfaced:** VCO does not sustain oscillation below Vctrl≈0.6-0.65V, contradicting the charter §4 floor of 0.27V — needs bias-generator resize or spec revision before Review 1 charge-pump/loop-filter work proceeds. |
@@ -279,6 +279,7 @@ If work starts happening in the ❌ list, we have drifted. Come back to this doc
 | 2026-09-29 | Full 5-corner grid run; tempco spread corrected to 12.5× (112-1399 ppm/°C), not the 3.4× from the 3-corner spot-check | `pll-sky130/results/vco/FINDINGS_GRID5CORNER.md`. fs corner (worst) wasn't in the original spot-check at all. |
 | 2026-09-29 | Second research axis (curvature-matched compensation) added and novelty-checked before commitment | Found US Patent 9,748,962 B2 (Infineon, 2017) covers generic linear+quadratic oscillator compensation. Narrowed claim to the composite that's still open: ring-VCO + closed-loop PLL + open PDK + statistically-validated quantification. See §3.4. |
 | 2026-09-29 | Review 2 closed out: per-corner compensation confirmed to generalize, cold-start acquisition fixed and verified (839ns from true 0V start), H1 regression pipeline validated on 6 real (α,C) points, sensitivity analysis and benchmark table delivered | `pll-sky130/RESULTS.md` "Review 2 — Closing Summary". Deferred to Review 3 with stated reasons: transistor-level CP/compensation network, n≥30 Monte Carlo, phase-noise estimate, Xyce cross-check (not packaged for this OS), CACE (hand-rolled scripts already equivalent). |
+| 2026-09-29 | Self-review corrections before Review 2 | (1) MC compared *signed* drift, overstating 1st-vs-2nd at n=12; re-tested on \|drift\| and re-run at n=30 — 2nd-order now significantly better (−2.48 MHz, CI [0.81, 4.15]). (2) Per-corner fits were in-sample; validated at 4 held-out temperatures. (3) ±0.3% spec met at ff/sf only — now stated. (4) All 15 references verified by DOI: the ring-VCO baseline is **Souliotis et al.** (AEU 2022), not "Ravi"; the open-source LC PLL is **Thiriloganathan et al.** (SMACD 2026), not "Sadhu"; Freitas et al. is now in JINST. |
 
 ---
 
@@ -297,7 +298,7 @@ If work starts happening in the ❌ list, we have drifted. Come back to this doc
 **Prior art we position against:**
 - É. M. V. Freitas et al., *Using Open Source EDA Tools in ASICs for HEP: A Mixed Comparison*, TWEPP 2025 / [arXiv:2512.06122](https://arxiv.org/pdf/2512.06122)
 - *A 2.4 GHz LC-VCO Fractional-N Phase Locked Loop Open-Source Design in 130-nm BiCMOS*, SMACD 2026 / [arXiv:2607.08852](https://arxiv.org/html/2607.08852v1)
-- *Temperature compensated ring oscillator based VCO*, [Microelectronics Journal, 2022](https://www.sciencedirect.com/science/article/abs/pii/S1434841122000929)
+- *Temperature compensated ring oscillator based VCO*, [AEU Int. J. Electron. Commun., 2022](https://www.sciencedirect.com/science/article/abs/pii/S1434841122000929)
 - [Working towards FOSS RF IC design in SKY130](https://wiki.f-si.org/index.php?title=Working_towards_FOSS_RF_IC_design_in_SKY130) — F-Si wiki
 
 **Original deck references [1]–[5]:** retained, see *Frequency Synthesizer Presentation.pdf* p.9.

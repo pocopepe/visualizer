@@ -57,16 +57,16 @@ Divider ratio (measured) & 8.004 & target 8.000 \\
 
 \section{What we proved wrong (our own inherited spec, not the reference papers)}
 \begin{itemize}[leftmargin=1.3em, itemsep=1pt]
-  \item \textbf{``$\pm0.15$\,ppm stability''} is not physically meaningful for a reference-locked PLL ($f_{out}=N f_{ref}$ exactly in lock) $\to$ restated as \textbf{$<\pm0.3\%$ residual VCO drift}, grounded against Ravi et al.\ 2022's fabricated $-1.5\%/+0.4\%$.
+  \item \textbf{``$\pm0.15$\,ppm stability''} is not physically meaningful for a reference-locked PLL ($f_{out}=N f_{ref}$ exactly in lock) $\to$ restated as \textbf{$<\pm0.3\%$ residual VCO drift}, grounded against Souliotis et al.\ 2022's fabricated $-1.5\%/+0.4\%$.
   \item \textbf{$V_{ctrl}$ floor of 0.27\,V} is unreachable --- this ring-VCO is device-threshold-limited, measured floor $\approx$0.6--0.65\,V $\to$ spec revised to \textbf{0.63\,V}.
   \item A single scalar compensation ratio $C$ doesn't hold given the $>3\times$ corner spread $\to$ \textbf{$C$ locked as per-corner}.
 \end{itemize}
 
 \section{What we took from the reference papers, and what we added}
 \begin{itemize}[leftmargin=1.3em, itemsep=1pt]
-  \item \textbf{Ravi et al.\ 2022}: the PTAT/CTAT-compensated ring-VCO topology class (not claiming novelty here).
+  \item \textbf{Souliotis et al.\ 2022}: the PTAT/CTAT-compensated ring-VCO topology class (not claiming novelty here).
   \item \textbf{Freitas et al.\ 2025 (TWEPP)}: closest prior open-vs-commercial comparison, but theirs is \emph{open-loop and qualitative only} $\to$ we close the loop and (Review 3) make it quantitative.
-  \item \textbf{Sadhu et al.\ 2026 (SMACD)}: confirms open-source tools have no PSS/Pnoise $\to$ we plan the same transient/jitter workaround, honestly labelled as an estimate.
+  \item \textbf{Thiriloganathan et al.\ 2026 (SMACD)}: confirms open-source tools have no PSS/Pnoise $\to$ we plan the same transient/jitter workaround, honestly labelled as an estimate.
 \end{itemize}
 
 \begin{finding}

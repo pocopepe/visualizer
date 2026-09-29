@@ -15,7 +15,9 @@ tt corner, α ∈ {0, 0.25, 0.5, 0.75, 1.0, 1.25} scaling both compensation coef
 | 1.0 | 1.12% | 7.57× |
 | 1.25 | 0.71% | 12.04× |
 
-**OLS regression (C vs α):** slope=8.59, 95% CI=[2.93, 14.26] (excludes both 0 and 1), R²=0.82, n=6, df=4.
+**OLS regression (C vs α):** slope=8.59, 95% CI=[2.93, 14.26], R²=0.82, n=6, df=4.
+
+**Don't read anything into that slope or its CI.** "More compensation strength gives a larger compensation ratio" is close to true by construction, so a slope excluding zero is expected, not evidence of anything; and "excludes 1" (reported in the first version of this file) has no meaning here — 1 is the proportionality constant H1 predicts for ε_res vs C, not for C vs α. The only claims this sweep supports are about readiness, listed below.
 
 ## Two things worth flagging honestly
 

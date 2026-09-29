@@ -19,29 +19,25 @@ Fix (zero additional simulation — reused the already-measured 1st-order-compen
 
 ## Monte Carlo (mismatch) — statistical significance
 
-n=12 seeds (device mismatch, `mc_mm_switch=1`), paired across baseline/1st-order/2nd-order-refined arms (same seed set, so paired tests are the correct tool — see `docs/stats_methodology.md`), tt corner, drift metric = f(85°C) - f(-40°C) per trial. Below is a first pass, explicitly under the recommended pilot size (n≥30) — reported honestly as directional, not final.
+Device mismatch on (`mc_mm_switch=1`), tt corner, drift = f(85°C) − f(−40°C) per trial, arms paired by seed (same mismatch instance through each arm — see `docs/stats_methodology.md`). n=30 seeds for the 1st- vs 2nd-order comparison (the question that needed it); baseline was run on seeds 1-12, which is ample for a difference this large. Reproduce: `python3 scripts/analyze_mc.py` (saved output: `results/mc_summary_n30.txt`).
 
-Drift metric = f(85°C) - f(-40°C) per trial (paired within trial via shared mismatch seed). Reproduce: `python3 scripts/analyze_mc.py`.
+**Compensation quality is |drift|, and that's what is tested.** The first version of this analysis compared *signed* drift and reported 1st- vs 2nd-order as significant — but 1st-order over-corrects (drift negative) and 2nd-order under-corrects slightly (positive), so the signed difference was mostly the sign flipping. On |drift| at n=12 the difference was not significant (CI [−0.28, 6.03] MHz). Re-run at n=30:
 
-| Arm | Mean drift | 95% CI | n |
+| Arm | n | Mean \|drift\| | 95% CI |
 |---|---|---|---|
-| Baseline | +18.927 MHz | [16.201, 21.654] | 12 |
-| 1st-order | -6.152 MHz | [-8.404, -3.899] | 12 |
-| 2nd-order refined | +3.275 MHz | [1.486, 5.065] | 12 |
+| Baseline | 12 | 18.93 MHz (8.4% of f₀) | [16.20, 21.65] |
+| 1st-order | 30 | 5.86 MHz (2.6%) | [4.62, 7.09] |
+| 2nd-order refined | 30 | 3.37 MHz (1.5%) | [2.33, 4.41] |
 
-All three MC means are close to their deterministic single-run counterparts (baseline 19.249 MHz, 1st-order -6.869 MHz, 2nd-order 2.521 MHz) — mismatch adds variance (std 2.8-4.3 MHz) but doesn't shift the central estimate much, a good consistency check between the two passes.
+| Comparison (paired, \|drift\|) | n | Reduction | 95% CI | Paired t | Wilcoxon | Wins |
+|---|---|---|---|---|---|---|
+| Baseline → 1st-order | 12 | 12.78 MHz | [9.98, 15.57] | significant | significant | 12/12 |
+| Baseline → 2nd-order | 12 | 15.65 MHz | [12.65, 18.66] | significant | significant | 12/12 |
+| 1st-order → 2nd-order | 30 | 2.48 MHz | [0.81, 4.15] | significant | significant | 23/30 |
 
-**Paired significance tests (same mismatch seeds across arms — the statistically correct comparison, see `docs/stats_methodology.md`):**
-
-| Comparison | Mean diff | 95% CI | Paired t-test | Wilcoxon |
-|---|---|---|---|---|
-| Baseline vs 1st-order | 25.079 MHz | [20.931, 29.227] | significant | significant |
-| 1st-order vs 2nd-order refined | -9.427 MHz | [-11.992, -6.862] | significant | significant |
-| Baseline vs 2nd-order refined | 15.652 MHz | [12.646, 18.659] | significant | significant |
-
-**This is a real result, not a single-point demo:** both compensation stages are statistically significant improvements (CIs exclude zero, corroborated by both a parametric and nonparametric test), and 2nd-order is significantly different from 1st-order in absolute residual magnitude (|3.275| < |6.152| MHz) — consistent with the deterministic pilot's 2.7× improvement. Caveat stands: n=12 is a first pass, below the recommended pilot size of n≈30 (`docs/stats_methodology.md`); re-run before this is a final claim, though the fact that both tests agree at n=12 is itself a reasonably strong signal.
+**Result:** both compensation stages significantly reduce drift under mismatch, and the curvature-matched 2nd-order network is significantly better than 1st-order (≈42% lower mean |drift|), with both tests agreeing at n=30. Note the 1st→2nd effect is modest next to the mismatch spread (std ≈3.6 MHz) — 7 of 30 mismatch instances still did better with 1st-order.
 
 ## Known limitations, stated plainly
 - Idealized behavioral compensation (a B-source correction voltage), not yet a transistor-level PTAT/squaring circuit — the natural next step once a design point is chosen.
-- Coefficients derived/refined against the **tt corner only**. Given the 12.5× corner-to-corner tempco spread (`results/vco/FINDINGS_GRID5CORNER.md`), this compensation will very likely underperform or overcorrect at ss/sf/fs/ff — per-corner refinement is required before claiming general validity, not optional polish.
-- n=12 Monte Carlo trials is a first pass, below the recommended pilot size of n≈30 (`docs/stats_methodology.md`) — re-run before this goes in a final report.
+- Coefficients here are the tt set; per-corner refits and a held-out-temperature check are in `results/comp/FINDINGS_PERCORNER.md`. The ±0.3% spec is met at ff and sf only.
+- Monte Carlo is tt-corner only; mismatch at other corners not run.

@@ -107,9 +107,9 @@ The Zeroth Review's headline target --- ``$\pm 0.15$\,ppm frequency stability ac
 \subsection{What is \emph{not} novel here, stated plainly}
 
 \begin{itemize}[leftmargin=1.5em]
-  \item A PTAT/CTAT-compensated ring-oscillator VCO inside a PLL: fabricated and published in 180\,nm CMOS (Ravi et al., \emph{Microelectronics Journal}, 2022), achieving $-1.5\%/+0.4\%$ over $-40$ to $120^\circ$C.
+  \item A PTAT/CTAT-compensated ring-oscillator VCO inside a PLL: fabricated and published in 180\,nm CMOS (Souliotis et al., \emph{AEU Int. J. Electron. Commun.}, 2022), achieving $-1.5\%/+0.4\%$ over $-40$ to $120^\circ$C.
   \item A PLL built with open-source tools in sky130: multiple existing repositories (e.g.\ the VSD-internship \texttt{apll\_01v8\_sky130} project, several Tiny\-Tapeout PLL submissions).
-  \item A fully open-source PLL with an LC-VCO: Sadhu et al.\ (SMACD 2026) built a 2.4\,GHz fractional-N LC-VCO PLL in the IHP SG13G2 PDK using Xschem/ngspice/KLayout/OpenEMS.
+  \item A fully open-source PLL with an LC-VCO: Thiriloganathan et al.\ (SMACD 2026) built a 2.4\,GHz fractional-N LC-VCO PLL in the IHP SG13G2 PDK using Xschem/ngspice/KLayout/OpenEMS.
   \item ``Open-source EDA compares reasonably to commercial tools'': established repeatedly for digital logic, and partially for analog.
 \end{itemize}
 
@@ -125,7 +125,7 @@ The closest prior work, Freitas et al.\ (TWEPP 2025, \texttt{arXiv:2512.06122}),
  & \shortstack{Quantified\\open-vs-commercial} & \shortstack{Closed-loop\\PLL} & \shortstack{Temperature\\compensation} & \shortstack{PVT +\\Monte Carlo} \\
 \midrule
 Freitas et al.\ 2025 & No (qualitative) & No & No & Digital blocks only \\
-Sadhu et al.\ 2026 & No & Yes & No & No \\
+Thiriloganathan et al.\ 2026 & No & Yes & No & No \\
 \textbf{This project} & \textbf{Yes (planned)} & \textbf{Yes} & \textbf{Yes} & \textbf{Yes (planned)} \\
 \bottomrule
 \end{tabular}
@@ -288,7 +288,7 @@ The accepted lock result assumes the loop starts already inside the VCO's confir
 \end{decision}
 
 \begin{decision}
-\textbf{Frequency stability target} restated from ``$\pm0.15$\,ppm'' (not physically meaningful for a locked PLL) to a residual VCO free-running drift target of \textbf{$<\pm0.3\%$ ($\approx\pm24$\,ppm/$^\circ$C)} over $-40$ to $+85^\circ$C, grounded against comparable published silicon (Ravi et al.\ 2022: $-1.5\%/+0.4\%$ in 180\,nm).
+\textbf{Frequency stability target} restated from ``$\pm0.15$\,ppm'' (not physically meaningful for a locked PLL) to a residual VCO free-running drift target of \textbf{$<\pm0.3\%$ ($\approx\pm24$\,ppm/$^\circ$C)} over $-40$ to $+85^\circ$C, grounded against comparable published silicon (Souliotis et al.\ 2022: $-1.5\%/+0.4\%$ in 180\,nm).
 \end{decision}
 
 % ------------------------------------------------------------------
@@ -315,7 +315,7 @@ The accepted lock result assumes the loop starts already inside the VCO's confir
 \begin{enumerate}[leftmargin=1.5em]
   \item Freitas, E.\ M.\ V.\ et al., ``Using Open Source EDA Tools in ASICs for HEP: A Mixed Comparison,'' TWEPP 2025 / \texttt{arXiv:2512.06122}.
   \item ``A 2.4\,GHz LC-VCO Fractional-N Phase Locked Loop Open-Source Design in 130-nm BiCMOS,'' SMACD 2026 / \texttt{arXiv:2607.08852}.
-  \item ``Temperature compensated ring oscillator based VCO,'' \emph{Microelectronics Journal}, 2022.
+  \item ``Temperature compensated ring oscillator based VCO,'' \emph{AEU Int. J. Electron. Commun.}, 2022.
   \item ``Low Power Fast Locking PLL Frequency Synthesizer with Temperature Compensation,'' EAME 2018, Atlantis Press.
   \item ``A 12GHz 67\% Tuning Range, 0.37ps RJrms PLL with LC-VCO Temperature Compensation Scheme in 0.13\textmu m CMOS,'' IEEE, 2014.
   \item ``Design of an Integrated CMOS PLL Frequency Synthesizer,'' IEEE Xplore.

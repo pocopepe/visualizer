@@ -1,0 +1,32 @@
+{
+ "tt": {
+  "span_fit": 1.12,
+  "span_all": 1.12,
+  "maxdev_holdout": 0.72,
+  "maxdev_fit": 0.87
+ },
+ "ff": {
+  "span_fit": 0.1,
+  "span_all": 0.11,
+  "maxdev_holdout": 0.05,
+  "maxdev_fit": 0.07
+ },
+ "ss": {
+  "span_fit": 3.32,
+  "span_all": 3.32,
+  "maxdev_holdout": 1.99,
+  "maxdev_fit": 2.46
+ },
+ "sf": {
+  "span_fit": 0.24,
+  "span_all": 0.24,
+  "maxdev_holdout": 0.08,
+  "maxdev_fit": 0.15
+ },
+ "fs": {
+  "span_fit": 5.31,
+  "span_all": 5.31,
+  "maxdev_holdout": 3.09,
+  "maxdev_fit": 3.83
+ }
+}

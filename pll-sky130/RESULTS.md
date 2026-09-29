@@ -14,16 +14,16 @@ Consequence if it holds: an open-source flow can't be trusted to design a correc
 
 | From | What we took | What we changed / added |
 |---|---|---|
-| Ravi et al. 2022 (*Microelectronics Journal*) | PTAT/CTAT-compensated ring-oscillator-in-PLL as the topology class — proven, fabricated, not a novel circuit to defend | We're not claiming the circuit is novel. Our contribution is measuring whether an open-source flow can be trusted to *design* it. |
+| Souliotis et al. 2022 (*AEU Int. J. Electron. Commun.*) | PTAT/CTAT-compensated ring-oscillator-in-PLL as the topology class — proven, fabricated, not a novel circuit to defend | We're not claiming the circuit is novel. Our contribution is measuring whether an open-source flow can be trusted to *design* it. |
 | Freitas et al. 2025 (TWEPP, arXiv:2512.06122) | The idea of a quantified open-source-vs-commercial comparison, same PDK family (they use IHP SG13G2, close to our sky130) | Their VCO comparison is **open-loop and qualitative only** — no numbers, no closed loop, no temp compensation, no PVT/Monte Carlo. We close the loop, add compensation, and (Review 3) make the comparison quantitative. |
-| Sadhu et al. 2026 (SMACD, arXiv:2607.08852) | Confirms independently that open-source tools have no PSS/Pnoise — a real, citable limitation, not one we're the first to hit | Their PLL has no temperature compensation and no commercial cross-check at all. We add both. |
+| Thiriloganathan et al. 2026 (SMACD, arXiv:2607.08852) | Confirms independently that open-source tools have no PSS/Pnoise — a real, citable limitation, not one we're the first to hit | Their PLL has no temperature compensation and no commercial cross-check at all. We add both. |
 | Original Zeroth Review deck | The block architecture (Ref → PFD → CP → LF → VCO → Divider), the -40→85°C range, the <2µs lock spec | Replaced GPDK45 with sky130 (licensing), added a full layout stage (originally schematic-only), and rewrote the frequency-stability spec (below) — the original number was not physically defensible. |
 
 ## What was proved wrong (from our own inherited spec, not from the reference papers)
 
 | Original claim | Why it's wrong | What replaced it |
 |---|---|---|
-| **±0.15 ppm frequency stability** | In a reference-locked PLL, f_out = N·f_ref *exactly* in lock. Temperature can't move it while locked — that stability number describes the reference crystal, not anything the PLL design contributes. | Residual **VCO free-running drift < ±0.3% (≈±24 ppm/°C)**, benchmarked against Ravi 2022's fabricated −1.5%/+0.4%. |
+| **±0.15 ppm frequency stability** | In a reference-locked PLL, f_out = N·f_ref *exactly* in lock. Temperature can't move it while locked — that stability number describes the reference crystal, not anything the PLL design contributes. | Residual **VCO free-running drift < ±0.3% (≈±24 ppm/°C)**, benchmarked against Souliotis 2022's fabricated −1.5%/+0.4%. |
 | **V_ctrl lock range [0.27V, 1.53V]** (0.15·VDD floor) | Measured: this ring-VCO topology doesn't sustain oscillation below ≈0.6–0.65V — it's device-threshold-limited (the NMOS current source's gate is driven directly by V_ctrl), not a sizing bug. | Floor revised to **[0.63V, 1.53V]** (0.35·VDD), matching what the topology actually delivers with margin. |
 | *(implicit)* single scalar compensation ratio C | Measured tempco varies **>3× across corners** (332/681/1070 ppm/°C at ff/tt/ss) | **C locked as per-corner, C(corner)**, not scalar — carried into Review 2 compensation design. |
 
@@ -74,12 +74,12 @@ Loop filter: R2=1.7kΩ, C1=68pF, C2=6.8pF, Icp=20µA → predicted fn≈1.98MHz,
 
 - Charge pump is an idealized behavioral model (no transistor switches, no mismatch) — deliberate, deferred to Review 2 where mismatch modeling is actually needed.
 - Closed-loop lock is a single point (tt, 27°C) — full PVT sweep is Review 2.
-- No phase noise / PSS analysis — not available in open-source tools (confirmed independently by Sadhu et al. 2026); Review 2 uses a transient/jitter estimate, Review 3 gets the real number from Spectre RF.
+- No phase noise / PSS analysis — not available in open-source tools (confirmed independently by Thiriloganathan et al. 2026); Review 2 uses a transient/jitter estimate, Review 3 gets the real number from Spectre RF.
 - Cold start from 0V drives a multi-microsecond acquisition dead zone (undocumented fix, flagged for Review 2) — the accepted lock result starts from a coarse-tuned V_ctrl=0.85V.
 
 ---
 
-# Review 2 (in progress, 2026-09-29)
+# Review 2 (2026-09-29)
 
 ## Second research axis: does curvature-matched compensation actually help?
 
@@ -114,15 +114,17 @@ Review 1 only spot-checked 3 of 5 sky130 corners. All 5 now run (tt/ff/ss/**sf/f
 
 No scipy in this environment — `scripts/stats.py` hand-rolls a paired t-test, Wilcoxon signed-rank (normal approximation), and OLS regression with a slope confidence interval, self-checked against known answers. Methodology sourced from a dedicated research pass, not invented ad hoc — see `docs/stats_methodology.md` for the reasoning (paired > unpaired given fixed SPICE seeds; report CI-excludes-zero instead of a p-value; regression needs ≥6-10 distinct points, not 3-4).
 
-Monte Carlo mismatch pass: **n=12 seeds** (tt corner, 3 compensation arms, paired same-seed). This is explicitly a first pass — the methodology research recommends a pilot of n≈30 before sizing a final run; n=12 is below that, done under time constraints. Reproduce: `python3 scripts/analyze_mc.py`.
+Monte Carlo mismatch (tt, arms paired by seed, tested on **|drift|** — the quantity that means "better"). Reproduce: `python3 scripts/analyze_mc.py`.
 
-| Arm | Mean drift (85°C - -40°C) | 95% CI |
-|---|---|---|
-| Baseline | +18.927 MHz | [16.201, 21.654] |
-| 1st-order | -6.152 MHz | [-8.404, -3.899] |
-| 2nd-order refined | +3.275 MHz | [1.486, 5.065] |
+| Arm | n | Mean \|drift\|, 85°C vs −40°C | 95% CI |
+|---|---|---|---|
+| Baseline | 12 | 18.93 MHz (8.4%) | [16.20, 21.65] |
+| 1st-order | 30 | 5.86 MHz (2.6%) | [4.62, 7.09] |
+| 2nd-order refined | 30 | 3.37 MHz (1.5%) | [2.33, 4.41] |
 
-**All three pairwise comparisons are statistically significant** (CIs exclude zero, confirmed by both a paired t-test and a Wilcoxon signed-rank test — they agree, which is a stronger result than either alone): baseline vs 1st-order, 1st-order vs 2nd-order, and baseline vs 2nd-order. The 2nd-order network's residual is significantly smaller in magnitude than 1st-order's (|3.275| vs |6.152| MHz), consistent with the deterministic pilot's 2.7× improvement. This is real hypothesis-testing rigor, not a single-run demo — though n=12 is a first pass, not the final statistically-saturated number (`results/comp/FINDINGS.md`).
+- Both compensation stages significantly reduce drift (12/12 seeds each, t-test and Wilcoxon agree).
+- **2nd-order is significantly better than 1st-order at n=30:** |drift| −2.48 MHz, 95% CI [0.81, 4.15], both tests agree, 23/30 seeds.
+- **Correction on record:** the first analysis tested *signed* drift and called 1st-vs-2nd significant at n=12 — mostly because 1st-order over-corrects (negative) and 2nd-order doesn't. On |drift| at n=12 it was *not* significant. The n=30 re-run is what earns the claim. See `docs/stats_methodology.md`.
 
 ---
 
@@ -132,18 +134,20 @@ Every checklist item resolved: delivered, or explicitly deferred to Review 3 wit
 
 ## Delivered
 
-- **Per-corner compensation generalizes.** All 5 corners refit independently (not just tt): every corner improves at both 1st- and 2nd-order compensation. 2nd-order residuals: 0.10% (ff) to 5.31% (fs). Compensation ratio C spans 3.30×-40.28× across corners — the `C(corner)` decision is now confirmed by data, not just motivated by it. `results/comp/FINDINGS_PERCORNER.md`.
+- **Per-corner compensation generalizes.** All 5 corners refit independently: every corner improves at both stages; 2nd-order span 0.10% (ff) to 5.31% (fs); C spans 3.30×-40.28×. The fits are in-sample, so each was re-checked at 4 held-out temperatures never used in fitting — all held-out points stay inside the fitted envelope. `results/comp/FINDINGS_PERCORNER.md`.
+- **Against our own ±0.3% spec: met at ff (0.07%) and sf (0.15%) only.** tt 0.87%, ss 2.46%, fs 3.83% max deviation from 27°C. Closing this is Review-3 work (process-tracking transistor-level network and/or per-corner trim).
+- **2nd-order beats 1st-order under mismatch** — significant at n=30 on |drift| (see above).
 - **Cold-start acquisition — fixed and verified.** A 5×-boosted-current charge pump variant closes the multi-microsecond dead-zone risk flagged since Review 1. Simulated from a TRUE 0V cold start (not the coarse-tuned 0.85V assumption): **locks in 839ns**, inside the 2µs spec, on the first attempt. `results/loop/FINDINGS_COLDSTART.md`.
-- **H1 regression pipeline validated** on 6 real (α, C) points — meets the stats-methodology minimum. Slope=8.59, 95% CI=[2.93,14.26], R²=0.82. This is pipeline-readiness, not the H1 test itself (still needs ε from Spectre). `results/comp/FINDINGS_H1_PIPELINE.md`.
+- **Compensation-strength sweep** — 6 (α, C) points ready to pair with Spectre ε data for the H1 test. The α-vs-C fit is near-circular and isn't evidence of anything by itself. `results/comp/FINDINGS_H1_PIPELINE.md`.
 - **Sensitivity insight** from existing corner data (no new sims): N/P-mismatched corners (sf, fs) — not absolute device speed — bracket the entire tempco range, pointing at current-source balance as the mechanism. `docs/sensitivity_analysis.md`.
-- **Benchmark table** against 3 independently-verified reference papers (not fabricating specs for the other 2). `docs/benchmark_table.md`.
+- **Benchmark table** against 3 references whose numbers were checked against publisher records; all 15 deck references re-verified by DOI (corrected several author/venue errors, e.g. the ring-VCO baseline paper is Souliotis et al., AEU). `docs/benchmark_table.md`.
 
 ## Deferred to Review 3, with reasons (not silently dropped)
 
 | Item | Why deferred |
 |---|---|
 | Transistor-level charge pump + compensation network | Both still idealized behavioral models; natural Review 3 work since layout (Magic) needs real transistors anyway |
-| Monte Carlo at n≥30 | n=12 already gives statistically significant, two-test-agreeing results — proves the method; more samples is a resource question, not a blocker |
-| Jitter/phase-noise estimate | Genuinely blocked: no PSS/Pnoise in open-source tools (independently confirmed by Sadhu et al. 2026); a fabricated interim number would be worse than waiting for Spectre RF |
+| Monte Carlo at other corners | tt only so far; the spec gap at ss/fs is the priority before more MC |
+| Jitter/phase-noise estimate | Genuinely blocked: no PSS/Pnoise in open-source tools (independently confirmed by Thiriloganathan et al. 2026); a fabricated interim number would be worse than waiting for Spectre RF |
 | ε_raw ngspice-vs-Xyce | Xyce isn't packaged for this OS; building from source is a multi-hour compile, not worth it under this deadline |
 | CACE | Hand-rolled sweep scripts already deliver the same capability; adopting CACE itself is a tooling nicety, not a new result |

@@ -46,3 +46,6 @@ results/comp/alpha/*.txt
 blocks/top/results_loop_coldstart.txt
 blocks/top/_run_cold.cir
 blocks/top/run_cold.log
+results/comp/holdout/*.cir
+results/comp/holdout/*.log
+results/comp/holdout/*.txt
