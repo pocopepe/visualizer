@@ -34,3 +34,15 @@ results/comp/phase1_refined/*.txt
 results/mc/*.cir
 results/mc/*.log
 results/mc/*.txt
+results/comp/percorner_1st/*.cir
+results/comp/percorner_1st/*.log
+results/comp/percorner_1st/*.txt
+results/comp/percorner_2nd/*.cir
+results/comp/percorner_2nd/*.log
+results/comp/percorner_2nd/*.txt
+results/comp/alpha/*.cir
+results/comp/alpha/*.log
+results/comp/alpha/*.txt
+blocks/top/results_loop_coldstart.txt
+blocks/top/_run_cold.cir
+blocks/top/run_cold.log

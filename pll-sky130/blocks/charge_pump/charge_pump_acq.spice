@@ -1,0 +1,25 @@
+* Charge pump with a fast-acquisition boost: sources/sinks BOOST times the
+* nominal current until the divider produces its first edge (i.e. before
+* the VCO has ever crossed into its oscillating range -- see
+* results/loop/FINDINGS.md "acquisition dead zone" risk). Once div_fb
+* toggles once, reverts to nominal current permanently.
+*
+* "Has div_fb ever toggled" is tracked with a B-source-charged capacitor
+* (an integrating latch), not a digital flip-flop: reuses the exact
+* current-injection idiom already proven correct in charge_pump.spice
+* (including its node-order polarity lesson) instead of introducing a new
+* digital latch and its own metastable-initial-state risk.
+.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/digital/digital_cells.spice"
+
+.subckt CHARGE_PUMP_ACQ up dn div_fb ctrl vdd vss
++ icp=20u boost=5
+
+Xed_div div_fb pulse_div vdd vss EDGEDET
+
+* Charges acq_node to vdd on the first pulse_div rising pulse, then holds
+* (no discharge path) -- a one-shot latch built from an ideal integrator.
+Bacq_chg acq_node vss I = '(V(pulse_div) > 0.9) ? -1m : 0'
+Cacq acq_node vss 1p
+
+Bcp vss ctrl I = '((V(acq_node)>0.9) ? {icp} : {icp}*{boost}) * ((V(up)>0.9 ? 1 : 0) - (V(dn)>0.9 ? 1 : 0))'
+.ends CHARGE_PUMP_ACQ

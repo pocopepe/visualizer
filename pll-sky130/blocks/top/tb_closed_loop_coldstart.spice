@@ -1,0 +1,34 @@
+* Same as tb_closed_loop.spice, but: (1) TRUE cold start from vctrl=0V
+* (not the coarse-tuned 0.85V assumption), (2) uses CHARGE_PUMP_ACQ (5x
+* boosted current until the divider's first edge) to close the
+* acquisition-dead-zone risk documented in results/loop/FINDINGS.md.
+.lib "__SPICE_MODELS__" tt
+.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/pfd/pfd.spice"
+.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/divider/divider.spice"
+.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/charge_pump/charge_pump_acq.spice"
+.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/loop_filter/loop_filter.spice"
+.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/vco/vco_ring.spice"
+
+.temp 27
+Vdd vdd 0 DC 1.8
+
+Vref ref 0 PULSE(0 1.8 0 100p 100p 17.686n 35.371n)
+
+Xpfd  ref div_fb up dn vdd 0 PFD
+Xcp   up dn div_fb vctrl vdd 0 CHARGE_PUMP_ACQ icp=20u boost=5
+Xlf   vctrl 0 LOOP_FILTER r2=1.7k c1=68p c2=6.8p
+Xvco  vctrl vdd 0 vco_out VCO_RING nstages=5 wn_inv=1.0 ln_inv=0.5 wp_inv=2.0 lp_inv=0.5 wcs=2.0 lcs=0.5
+Xdiv  vco_out div_fb vdd 0 DIV8
+
+* TRUE cold start: vctrl=0V, loop filter node consistent (see
+* tb_closed_loop.spice for why nlf must match vctrl exactly).
+.ic v(vctrl)=0 v(xlf.nlf)=0 v(xvco.n1)=0 v(xvco.n2)=1.8 v(xvco.n3)=0 v(xvco.n4)=1.8 v(xvco.n5)=0
+
+.tran 20p 3000n uic
+
+.control
+  run
+  wrdata results_loop_coldstart.txt v(vctrl) v(vco_out) v(div_fb) v(up) v(dn)
+  quit
+.endc
+.end

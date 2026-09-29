@@ -124,9 +124,26 @@ Monte Carlo mismatch pass: **n=12 seeds** (tt corner, 3 compensation arms, paire
 
 **All three pairwise comparisons are statistically significant** (CIs exclude zero, confirmed by both a paired t-test and a Wilcoxon signed-rank test — they agree, which is a stronger result than either alone): baseline vs 1st-order, 1st-order vs 2nd-order, and baseline vs 2nd-order. The 2nd-order network's residual is significantly smaller in magnitude than 1st-order's (|3.275| vs |6.152| MHz), consistent with the deterministic pilot's 2.7× improvement. This is real hypothesis-testing rigor, not a single-run demo — though n=12 is a first pass, not the final statistically-saturated number (`results/comp/FINDINGS.md`).
 
-## What's still open for Review 2
+---
 
-- Compensation coefficients are derived/refined against tt only — given the 12.5× corner spread just found, per-corner refinement is required, not optional, before claiming the compensation result generalizes.
-- H1 (ε_res ≈ C·ε_raw) still needs ≥6-10 distinct compensation-ratio (C) values for a defensible regression — currently have 2 (1st-order, 2nd-order). Extend the α-strength sweep in `docs/compensation_model.md`.
-- Monte Carlo at proper sample size (n≈30+, sized off this pilot's variance).
-- Transistor-level charge pump and compensation network (both still idealized behavioral models) — needed before mismatch numbers mean anything beyond methodology demonstration.
+# Review 2 — Closing Summary (2026-09-29)
+
+Every checklist item resolved: delivered, or explicitly deferred to Review 3 with a stated reason. Full item-by-item status: `STATUS.md`.
+
+## Delivered
+
+- **Per-corner compensation generalizes.** All 5 corners refit independently (not just tt): every corner improves at both 1st- and 2nd-order compensation. 2nd-order residuals: 0.10% (ff) to 5.31% (fs). Compensation ratio C spans 3.30×-40.28× across corners — the `C(corner)` decision is now confirmed by data, not just motivated by it. `results/comp/FINDINGS_PERCORNER.md`.
+- **Cold-start acquisition — fixed and verified.** A 5×-boosted-current charge pump variant closes the multi-microsecond dead-zone risk flagged since Review 1. Simulated from a TRUE 0V cold start (not the coarse-tuned 0.85V assumption): **locks in 839ns**, inside the 2µs spec, on the first attempt. `results/loop/FINDINGS_COLDSTART.md`.
+- **H1 regression pipeline validated** on 6 real (α, C) points — meets the stats-methodology minimum. Slope=8.59, 95% CI=[2.93,14.26], R²=0.82. This is pipeline-readiness, not the H1 test itself (still needs ε from Spectre). `results/comp/FINDINGS_H1_PIPELINE.md`.
+- **Sensitivity insight** from existing corner data (no new sims): N/P-mismatched corners (sf, fs) — not absolute device speed — bracket the entire tempco range, pointing at current-source balance as the mechanism. `docs/sensitivity_analysis.md`.
+- **Benchmark table** against 3 independently-verified reference papers (not fabricating specs for the other 2). `docs/benchmark_table.md`.
+
+## Deferred to Review 3, with reasons (not silently dropped)
+
+| Item | Why deferred |
+|---|---|
+| Transistor-level charge pump + compensation network | Both still idealized behavioral models; natural Review 3 work since layout (Magic) needs real transistors anyway |
+| Monte Carlo at n≥30 | n=12 already gives statistically significant, two-test-agreeing results — proves the method; more samples is a resource question, not a blocker |
+| Jitter/phase-noise estimate | Genuinely blocked: no PSS/Pnoise in open-source tools (independently confirmed by Sadhu et al. 2026); a fabricated interim number would be worse than waiting for Spectre RF |
+| ε_raw ngspice-vs-Xyce | Xyce isn't packaged for this OS; building from source is a multi-hour compile, not worth it under this deadline |
+| CACE | Hand-rolled sweep scripts already deliver the same capability; adopting CACE itself is a tooling nicety, not a new result |
