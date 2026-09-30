@@ -119,7 +119,7 @@ Monte Carlo mismatch (tt, arms paired by seed, tested on **|drift|** — the qua
 | Arm | n | Mean \|drift\|, 85°C vs −40°C | 95% CI |
 |---|---|---|---|
 | Baseline | 12 | 18.93 MHz (8.4%) | [16.20, 21.65] |
-| 1st-order | 30 | 5.86 MHz (2.6%) | [4.62, 7.09] |
+| 1st-order | 30 | 5.85 MHz (2.6%) | [4.62, 7.09] |
 | 2nd-order refined | 30 | 3.37 MHz (1.5%) | [2.33, 4.41] |
 
 - Both compensation stages significantly reduce drift (12/12 seeds each, t-test and Wilcoxon agree).

@@ -26,7 +26,7 @@ Device mismatch on (`mc_mm_switch=1`), tt corner, drift = f(85°C) − f(−40°
 | Arm | n | Mean \|drift\| | 95% CI |
 |---|---|---|---|
 | Baseline | 12 | 18.93 MHz (8.4% of f₀) | [16.20, 21.65] |
-| 1st-order | 30 | 5.86 MHz (2.6%) | [4.62, 7.09] |
+| 1st-order | 30 | 5.85 MHz (2.6%) | [4.62, 7.09] |
 | 2nd-order refined | 30 | 3.37 MHz (1.5%) | [2.33, 4.41] |
 
 | Comparison (paired, \|drift\|) | n | Reduction | 95% CI | Paired t | Wilcoxon | Wins |

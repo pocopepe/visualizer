@@ -9,7 +9,7 @@ Review 2's first compensation pass (`results/comp/FINDINGS.md`) only proved the 
 | tt | 8.51% | 3.05% | 1.12% | 2.79× | 7.57× |
 | ff | 4.15% | 1.06% | **0.10%** | 3.91× | **40.28×** |
 | ss | 13.37% | 6.37% | 3.32% | 2.10× | 4.02× |
-| sf | 1.40% | 0.42% | 0.24% | 3.32× | 5.77× |
+| sf | 1.48% | 0.42% | 0.24% | 3.52× | 6.12× |
 | fs | 17.49% | 9.13% | **5.31%** | 1.92× | 3.30× |
 
 **Every corner improves at both compensation stages — the approach genuinely generalizes, not just at tt.** But the compensation ratio `C` varies by more than 12× across corners (3.30× at fs to 40.28× at ff), which is exactly why the charter's decision to define `C` as `C(corner)` rather than a scalar was correct, not just cautious.
