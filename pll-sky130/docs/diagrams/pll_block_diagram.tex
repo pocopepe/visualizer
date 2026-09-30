@@ -19,9 +19,11 @@
 \draw[->] (pfd) -- (cp) node[midway, above]{up/dn};
 \draw[->] (cp) -- (lf) node[midway, above]{$I_{cp}$};
 \draw[->] (lf) -- (vco) node[midway, above]{$V_{ctrl}$};
-\draw[->] (vco.south) -- ++(0,-0.5) -| (div.north) node[midway, above, xshift=1.7cm]{vco\_out};
-\draw[->] (div.west) -| ++(-0.8,1.9) -| (pfd.south) node[near start, left, xshift=-0.2cm]{div\_fb};
+\draw[->] (vco.south) -- ++(0,-0.5) -| (div.north);
+\path (vco.south) ++(0,-0.5) node[below left]{vco\_out};
+\draw[->] (div.west) -| ++(-0.8,1.9) -| (pfd.south);
+\path (div.west) ++(-0.8,0.9) node[left]{div\_fb};
 
-\node[align=center, font=\footnotesize] at (7.7,-2.2) {Closed-loop lock (tt, 27\textdegree C): \textbf{577 ns} (spec $<$2\,$\mu$s, analytical model 450\,ns)};
+\node[align=center, font=\footnotesize] [below=0.3cm of div] {Closed-loop lock (tt, 27\textdegree C): \textbf{577 ns} (spec $<$2\,$\mu$s, analytical model 450\,ns)};
 \end{tikzpicture}
 \end{document}

@@ -1,56 +1,42 @@
-\documentclass[tikz,border=10pt]{standalone}
+\documentclass[border=10pt]{standalone}
 \usepackage{circuitikz}
-\ctikzset{resistors/scale=0.8, capacitors/scale=0.8}
 \begin{document}
-\begin{circuitikz}[scale=1.1, transform shape, every node/.style={font=\small}]
-
+\begin{circuitikz}[every node/.style={font=\small}]
 % ===================== BIAS GENERATOR =====================
-\node[font=\bfseries] at (0,8.0) {Bias generator};
-\draw (0,7) node[above]{VDD} to[short] (0,6.6);
-\draw (0,6.6) node[pmos, anchor=S, xscale=-1](Mpb){};
-\draw (0,6.6) -- (Mpb.S);
-\draw (Mpb.D) |- (0,5.3) node[circ]{};
-\node[right] at (0.15,5.3) {vbiasp};
-\draw (Mpb.G) -| (0,5.3);
-\node[left] at (-1.3,6.1) {\footnotesize Mpb (diode)};
-
-\draw (0,5.3) to[short] (0,4.9);
-\draw (0,4.9) node[nmos, anchor=D, xscale=-1](Mnb){};
-\draw (Mnb.S) to[short] (0,3.6) node[below]{VSS};
-\draw (Mnb.G) -- ++(-1.6,0) node[left]{$V_{ctrl}$};
-\node[left] at (-1.3,4.4) {\footnotesize Mnb};
-
+\node[font=\bfseries] at (0,9.3) {Bias generator};
+\draw (0,7.6) node[vdd]{VDD};
+\node[pmos, anchor=S] (Mpb) at (0,7.6) {};
+\node[nmos, anchor=D] (Mnb) at (0,5.2) {};
+\draw (Mpb.D) -- (Mnb.D);
+\draw (Mnb.S) node[ground]{};
+\draw (Mpb.G) -- ++(0,-0.6) coordinate(dg) -| (Mpb.D);
+\coordinate (vbp) at (0,5.8);
+\draw (vbp) node[circ]{};
+\node[right] at (vbp) {\footnotesize vbiasp};
+\draw (Mnb.G) -- ++(-0.6,0) node[left]{$V_{ctrl}$};
+\node[left, xshift=-0.5cm] at (Mpb.west) {\footnotesize Mpb (diode)};
+\node[right] at (Mnb.east) {\footnotesize Mnb};
 % ===================== ONE RING STAGE =====================
-\node[font=\bfseries] at (5,8.0) {One ring stage (current-starved inverter)};
-\draw (5,7) node[above]{VDD} to[short] (5,6.6);
-\draw (5,6.6) node[pmos, anchor=S, xscale=-1](Mpcs){};
-\draw (5,6.6) -- (Mpcs.S);
-\draw (Mpcs.G) -| ++(-2.3,-0.55) -| (0,5.3);
-\draw (Mpcs.D) |- (5,5.3) node[circ]{};
-\node[right] at (5.15,5.3) {nodeA};
-\node[left] at (3.6,6.1) {\footnotesize Mp\_cs};
-
-\draw (5,5.3) to[short] (5,4.9);
-\draw (5,4.9) node[pmos, anchor=S, xscale=-1](Mpinv){};
-\draw (Mpinv.G) -- ++(-1.6,0) node[left]{in};
-\draw (Mpinv.D) |- (5,3.6) node[circ]{};
-\node[right] at (5.15,3.6) {out};
-\node[left] at (3.6,4.4) {\footnotesize Mp\_inv};
-
-\draw (5,3.6) to[short] (5,3.2);
-\draw (5,3.2) node[nmos, anchor=D, xscale=-1](Mninv){};
-\draw (Mninv.G) -- ++(-1.6,0) node[left]{in};
-\draw (Mninv.S) |- (5,1.9) node[circ]{};
-\node[right] at (5.15,1.9) {nodeB};
-\node[left] at (3.6,2.7) {\footnotesize Mn\_inv};
-
-\draw (5,1.9) to[short] (5,1.5);
-\draw (5,1.5) node[nmos, anchor=D, xscale=-1](Mncs){};
-\draw (Mncs.G) -- ++(-2.3,0) -- ++(0,-1.75) -| (0,3.6);
-\node[left] at (3.6,1.0) {\footnotesize Mn\_cs};
-\draw (Mncs.S) to[short] (5,0.5) node[below]{VSS};
-
-\node[align=left, font=\footnotesize, text width=6.5cm] at (5,-0.6) {gates of Mp\_cs/Mn\_cs are the SAME nets as the bias generator (vbiasp / $V_{ctrl}$)};
-
+\node[font=\bfseries, align=center] at (6,9.5) {One ring stage\\(current-starved inverter)};
+\draw (6,7.6) node[vdd]{VDD};
+\node[pmos, anchor=S] (Mpcs) at (6,7.6) {};
+\node[pmos, anchor=S] (Mpinv) at (6,6.1) {};
+\node[nmos, anchor=D] (Mninv) at (6,4.1) {};
+\node[nmos, anchor=D] (Mncs) at (6,2.6) {};
+\draw (Mpcs.D) -- (Mpinv.S) node[midway,circ]{} node[midway,right]{\footnotesize nodeA};
+\draw (Mpinv.D) -- (Mninv.D) node[midway,circ](o){};
+\draw (o) -- ++(0.9,0) node[right]{out};
+\draw (Mninv.S) -- (Mncs.D) node[midway,circ]{} node[midway,right]{\footnotesize nodeB};
+\draw (Mncs.S) node[ground]{};
+\draw (Mpinv.G) -- ++(-0.4,0) coordinate(a) (Mninv.G) -- ++(-0.4,0) coordinate(b);
+\draw (a) -- (b) node[midway,circ](in){};
+\draw (in) -- ++(-0.6,0) node[left]{in};
+\draw (Mpcs.G) -- ++(-2.2,0) node[left]{vbiasp};
+\draw (Mncs.G) -- ++(-2.2,0) node[left]{$V_{ctrl}$};
+\node[right] at (Mpcs.east) {\footnotesize Mp\_cs};
+\node[right] at (Mpinv.east) {\footnotesize Mp\_inv};
+\node[right] at (Mninv.east) {\footnotesize Mn\_inv};
+\node[right] at (Mncs.east) {\footnotesize Mn\_cs};
+\node[align=left, font=\footnotesize, text width=6cm] at (1.8,0.9) {gates of Mp\_cs/Mn\_cs are the SAME nets as the bias generator (vbiasp / $V_{ctrl}$)};
 \end{circuitikz}
 \end{document}

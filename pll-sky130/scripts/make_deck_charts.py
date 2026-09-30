@@ -382,6 +382,11 @@ def main(base, out):
                                 if row.cells[0].text == "sf" and r.text == "1.40%":
                                     r.text = "1.48%"
                                 r.text = r.text.replace("5.86 MHz", "5.85 MHz")
+    # slide 5: swap in the current block diagram (the base deck embeds an older render)
+    arch = old[4]
+    pic = next(sh for sh in arch.shapes if sh.shape_type == 13 and sh.width == W)
+    picture(arch, DIA / "pll_block_diagram.png", pic.left, pic.top, pic.width, 3196694)
+    pic._element.getparent().remove(pic._element)
     S = build(prs, logo)
     o = {i + 1: sl for i, sl in enumerate(old)}
     order = [o[1], o[2], o[3], o[4], o[5], S["vco"], S["comp_arch"], S["acq"], S["method"], o[6],
