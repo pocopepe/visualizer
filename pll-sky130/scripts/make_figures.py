@@ -143,18 +143,42 @@ plt.title("Monte Carlo means with 95 % confidence intervals")
 plt.ylim(0, 25)
 save("mc_means")
 
-# 9. lock transients
+# 9. lock transients (retuned loop, R2 = 3.6k)
 plt.figure(figsize=(7.4, 4))
-for key, lab_, col, tl in [("lock_coarse", "start at 0.85 V (coarse-tuned)", TEAL, 577),
-                           ("lock_cold", "true cold start from 0 V (boosted CP)", NAVY, 839)]:
+for key, lab_, col, tl in [("lock_coarse_new", "start at 0.85 V (coarse-tuned)", TEAL, 503),
+                           ("lock_cold_new", "true cold start from 0 V (boosted CP)", NAVY, 1352)]:
     t, v = zip(*D[key]); plt.plot(t, v, color=col, lw=1.4, label=f"{lab_}: lock {tl} ns")
     plt.axvline(tl, ls=":", color=col)
 plt.axhspan(0.9 * 0.98, 0.9 * 1.02, color="green", alpha=0.12, label="±2 % lock band")
-plt.axhline(0.65, ls="--", color=RED, lw=1); plt.text(1250, 0.57, "below 0.65 V the VCO is < 18 MHz", color=RED, fontsize=9)
+plt.axhline(0.65, ls="--", color=RED, lw=1); plt.text(1700, 0.57, "below 0.65 V the VCO is < 18 MHz", color=RED, fontsize=9)
 plt.xlabel("Time (ns)"); plt.ylabel("V_ctrl (V)")
-plt.title("Closed-loop lock (tt, 27 °C); spec < 2000 ns")
+plt.title("Closed-loop lock, retuned R2 = 3.6 kΩ (tt, 27 °C); spec < 2000 ns")
 plt.legend(fontsize=8.5, loc="lower right")
 save("lock")
+
+# 9b. old vs retuned loop filter, coarse start
+plt.figure(figsize=(7.4, 4))
+for key, lab_, col in [("lock_coarse", "original R2 = 1.7 kΩ (ζ ≈ 0.33): 577 ns", ORANGE),
+                       ("lock_coarse_new", "retuned R2 = 3.6 kΩ (ζ ≈ 0.70): 503 ns", NAVY)]:
+    t, v = zip(*D[key]); plt.plot(t, v, color=col, lw=1.4, label=lab_)
+plt.axhspan(0.9 * 0.98, 0.9 * 1.02, color="green", alpha=0.12, label="±2 % lock band")
+plt.ylim(0.82, 0.96); plt.xlim(0, 2000)
+plt.xlabel("Time (ns)"); plt.ylabel("V_ctrl (V)")
+plt.title("Same loop, two loop filters: ringing vs settled")
+plt.legend(fontsize=8.5, loc="lower right")
+save("lock_compare")
+
+# 9c. lock time per corner, retuned loop
+plt.figure(figsize=(6.4, 3.8))
+order = ["ff", "sf", "tt", "fs", "ss"]
+lt = [D["lock_corners"][c]["3.6k"].get("lock_ns_5us", D["lock_corners"][c]["3.6k"]["lock_ns"]) for c in order]
+bars = plt.bar(order, lt, color=[CC[c] for c in order])
+for b_, v_ in zip(bars, lt):
+    plt.text(b_.get_x() + b_.get_width() / 2, v_ + 25, f"{v_:.0f}", ha="center", fontsize=10)
+plt.axhline(2000, ls="--", color="green"); plt.text(-0.4, 2040, "spec 2000 ns", color="green", fontsize=9)
+plt.ylim(0, 2300); plt.ylabel("Lock time from 0.85 V start (ns)")
+plt.title("Retuned loop locks at all five corners")
+save("lock_corners")
 
 # 10. alpha sweep
 plt.figure(figsize=(5.6, 3.6))

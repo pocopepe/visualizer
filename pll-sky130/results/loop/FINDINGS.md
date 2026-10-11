@@ -2,16 +2,18 @@
 
 **Result: the loop locks.** Nominal corner (tt, 27°C), design point from `docs/loop_model.md`.
 
-> **Erratum (2026-10-11).** This file originally compared 577 ns to a "~450 ns analytical model" prediction and explained the gap by PFD reset delay and discrete pumping. That prediction came from an arithmetic error in `docs/loop_model.md` (missing 1/(2π)); it matched only by coincidence, and the gap explanation is withdrawn. The corrected loop is underdamped (fn ≈ 0.9 MHz, ζ ≈ 0.33, PM ≈ 30-33°), consistent with the overshoot to ~0.92 V seen here. The 577 ns measurement is unaffected and **matches an independent averaged behavioural model (573 ns, `scripts/loop_check.py`)**.
+> **Retune note (2026-10-11).** Every number in this file is for the **original loop filter, R2 = 1.7 kΩ** (the Review-1 design), and is kept as the "before". The loop filter was subsequently retuned to **R2 = 3.6 kΩ** and verified at transistor level: tt coarse-start lock 577 → 503 ns, final frequency error 0.78 % → 0.008 %, V_ctrl ripple 8.6 → 0.35 mV p-p, and the loop now locks inside 2 µs at all five corners (the original had not settled by 2 µs at ff/sf/fs/ss). See `results/loop/FINDINGS_RETUNE.md` and `docs/loop_model.md`. The testbench `blocks/top/tb_closed_loop.spice` now instantiates r2=3.6k.
 
-| Quantity | Measured | Target / Predicted |
+> **Erratum (2026-10-11).** This file originally compared 577 ns to a "~450 ns analytical model" prediction and explained the gap by PFD reset delay and discrete pumping. That prediction came from an arithmetic error in `docs/loop_model.md` (missing 1/(2π)); it matched only by coincidence, and the gap explanation is withdrawn. The corrected original loop (R2 = 1.7 kΩ) is underdamped (fn ≈ 0.9 MHz, ζ ≈ 0.33, PM ≈ 30-33°), consistent with the overshoot to ~0.92 V seen here. The 577 ns measurement is unaffected and **matches an independent averaged behavioural model (573 ns, `scripts/loop_check.py`)**.
+
+| Quantity (original R2 = 1.7 kΩ) | Measured | Target / Predicted |
 |---|---|---|
 | Lock time (vctrl enters and stays within ±2% of final value) | **577 ns** | <2µs (charter); 573 ns (independent averaged model; the original "450 ns analytical" is withdrawn) |
 | Settled vctrl | 0.902 V | 0.9 V design point |
 | Settled div_fb frequency | 28.515 MHz | f_ref = 28.275 MHz (0.85% high) |
 | Settled VCO output frequency | 227.96 MHz | N·f_ref = 226.2 MHz (0.78% high) |
 
-The small residual frequency offset (~0.8%) is consistent with normal charge-pump/PFD limit-cycle ripple in a real (non-ideal) type-II CP-PLL — not a bug. The measured 577ns agrees with the independent averaged behavioural model (573 ns) run on the measured tuning curve from the same 0.85 V start, which is the check that matters. (Earlier text here attributed a 577-vs-450 ns gap to PFD reset delay and discrete pumping; that explanation is withdrawn together with the 450 ns figure.)
+The residual frequency offset (~0.8%) was attributed here to charge-pump/PFD limit-cycle ripple. The retune data suggests it was mostly the underdamped loop not yet having settled at 2 µs: with R2 = 3.6 kΩ the same run ends 0.008 % from target with 0.35 mV ripple (vs 8.6 mV), though this was not isolated by a dedicated experiment. The measured 577ns agrees with the independent averaged behavioural model (573 ns) run on the measured tuning curve from the same 0.85 V start, which is the check that matters. (Earlier text here attributed a 577-vs-450 ns gap to PFD reset delay and discrete pumping; that explanation is withdrawn together with the 450 ns figure.)
 
 Raw data: `run4_icfix.txt` is the accepted result. `run1_acquisition_deadzone.txt`, `run2_finelock.txt`, `run3_holdfix.txt` are kept as the debugging trail, not as results — see below.
 

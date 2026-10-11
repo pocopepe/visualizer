@@ -88,7 +88,7 @@ def picture(s, path, x, y, w, h):
 def scope(s):
     text(s, X0, 6130000, 10500000, 280000,
          [("Scope: compensation is an ideal behavioural correction voltage (transistor-level in Review 3); "
-           "closed-loop results are tt / 27 °C.", False, RGBColor(0x77, 0x77, 0x77))], size=10)
+           "closed-loop results are tt / 27 °C (corner lock tests: coarse start).", False, RGBColor(0x77, 0x77, 0x77))], size=10)
 
 
 # ---------- chart helpers ----------
@@ -241,7 +241,7 @@ def build(prs, logo):
         ("Problem (open since Review 1)", True, NAVY),
         "From a true 0 V start the VCO is in deep subthreshold (0.6 MHz at 0.5 V, 6.5 MHz at 0.6 V, vs 226 MHz target): the divided clock is effectively absent → PFD sees only REF → slow pump-up at 20 µA.",
         ("Fix", True, NAVY),
-        "Charge pump runs at 5 × I_cp until the divider's first edge, then a one-shot latch drops it to the nominal 20 µA. Result: lock in 839 ns from 0 V (< 2 µs spec)."],
+        "Charge pump runs at 5 × I_cp until the divider's first edge, then a one-shot latch drops it to the nominal 20 µA. Result: lock in 1352 ns from 0 V with the retuned loop filter (839 ns with the original), inside the 2 µs spec."],
         size=13)
 
     # D: methodology
@@ -330,43 +330,74 @@ def build(prs, logo):
              "meets spec" if ok else "misses spec", GREEN if ok else RED)
     scope(s)
 
-    # J: lock transient
-    s = S["lock"] = new_slide(prs, "Closed-Loop Lock Transient", logo)
+    # J: lock transient (retuned loop filter, R2 = 3.6k)
+    s = S["lock"] = new_slide(prs, "Closed-Loop Lock Transient (Retuned Loop)", logo)
     ch = xy(s, X0, Y0 - 100000, 7600000, 4700000, [
-        ("start 0.85 V (coarse-tuned): 577 ns", [tuple(p) for p in D["lock_coarse"]], TEAL, "line"),
-        ("true 0 V cold start (boosted): 839 ns", [tuple(p) for p in D["lock_cold"]], NAVY, "line"),
+        ("start 0.85 V (coarse-tuned): 503 ns", [tuple(p) for p in D["lock_coarse_new"]], TEAL, "line"),
+        ("true 0 V cold start (boosted): 1352 ns", [tuple(p) for p in D["lock_cold_new"]], NAVY, "line"),
         hline(0.65, 0, 3000, "below 0.65 V the VCO is < 18 MHz", RED)],
         xt="Time (ns)", yt="V_ctrl (V)", xmin=0, xmax=3000, ymin=0, ymax=1.2)
     legend(ch, size=10)
-    stat(s, 8500000, Y0, 3000000, 1100000, "839 ns", "lock from 0 V cold start")
-    stat(s, 8500000, Y0 + 1250000, 3000000, 1100000, "577 ns", "lock from 0.85 V", TEAL)
-    stat(s, 8500000, Y0 + 2500000, 3000000, 1100000, "< 2 µs", "spec (averaged model: 573 ns)", GREEN)
-    text(s, 8500000, Y0 + 3750000, 3000000, 900000,
-         ["Lock = V_ctrl within ±2 % of 0.9 V and staying there."], size=11)
+    stat(s, 8500000, Y0, 3000000, 1050000, "1352 ns", "lock from 0 V cold start (was 839 ns)", NAVY)
+    stat(s, 8500000, Y0 + 1150000, 3000000, 1050000, "503 ns", "lock from 0.85 V (was 577 ns)", TEAL)
+    stat(s, 8500000, Y0 + 2300000, 3000000, 1050000, "< 2 µs", "spec: met at both starts", GREEN)
+    text(s, 8500000, Y0 + 3450000, 3000000, 1200000, [
+        "Lock = V_ctrl within ±2 % of 0.9 V and staying there.",
+        "R2 = 3.6 kΩ. The retune makes the cold start slower (+61 %) but well damped."], size=11)
     scope(s)
 
-    # J2: loop dynamics, honest numbers
-    s = S["loopdyn"] = new_slide(prs, "Loop Dynamics: Corrected Numbers", logo)
-    from loop_check import lock as avg_lock
-    _, tr = avg_lock(0.85)
-    avg = [(t * 1e9, v) for t, v in tr[::100] if t * 1e9 <= 3000]
+    # J2: loop dynamics: found, fixed, verified
+    s = S["loopdyn"] = new_slide(prs, "Loop Dynamics: Found, Fixed, Verified", logo)
     ch = xy(s, X0, Y0 - 100000, 6000000, 4300000, [
-        ("transistor-level transient (577 ns)", [tuple(p) for p in D["lock_coarse"] if p[0] <= 3000], TEAL, "line"),
-        ("averaged behavioural model (573 ns)", avg, ORANGE, "dash")],
-        xt="Time (ns)", yt="V_ctrl (V)", xmin=0, xmax=3000, ymin=0.8, ymax=1.0)
+        ("original R2 = 1.7 kΩ (ζ ≈ 0.33): 577 ns", [tuple(p) for p in D["lock_coarse"] if p[0] <= 2000], ORANGE, "line"),
+        ("retuned R2 = 3.6 kΩ (ζ ≈ 0.70): 503 ns", [tuple(p) for p in D["lock_coarse_new"] if p[0] <= 2000], NAVY, "line")],
+        xt="Time (ns)", yt="V_ctrl (V)", xmin=0, xmax=2000, ymin=0.82, ymax=0.96)
     legend(ch, size=10)
-    stat(s, 6900000, Y0, 2150000, 1050000, "ζ ≈ 0.33", "damping (Review 1 claimed 0.72)", RED, size=22)
-    stat(s, 9250000, Y0, 2250000, 1050000, "f_n ≈ 0.9 MHz", "natural freq. (claimed 2 MHz)", RED, size=20)
-    stat(s, 6900000, Y0 + 1200000, 2150000, 1050000, "≈ 30°", "phase margin (claimed 70°)", RED, size=22)
-    stat(s, 9250000, Y0 + 1200000, 2250000, 1050000, "573 vs 577 ns", "model vs transistor lock", GREEN, size=20)
+    stat(s, 6900000, Y0, 2150000, 1050000, "ζ 0.33 → 0.70", "damping (Review 1 claimed 0.72)", NAVY, size=20)
+    stat(s, 9250000, Y0, 2250000, 1050000, "≈ 30° → 65°+", "phase margin (100·ζ rule)", NAVY, size=20)
+    stat(s, 6900000, Y0 + 1200000, 2150000, 1050000, "8.6 → 0.35 mV", "V_ctrl ripple at lock", GREEN, size=20)
+    stat(s, 9250000, Y0 + 1200000, 2250000, 1050000, "0.78 → 0.008 %", "residual frequency error at 2 µs", GREEN, size=20)
     text(s, 6900000, Y0 + 2450000, 4600000, 2200000, [
-        ("What was wrong", True, NAVY),
-        "Review 1 dropped the 1/(2π) of the charge-pump gain in ω_n², overstating ω_n by √(2π) and ζ likewise.",
-        ("What stands", True, NAVY),
-        "Simulated lock times (577 / 839 ns) are direct results; an independent model reproduces them. Spec < 2 µs met.",
-        ("Next", True, NAVY),
-        "Underdamped loop: retune R2 ≈ 3.6 kΩ for ζ ≈ 0.7 and re-verify (Review 3)."], size=11)
-    text(s, X0, 5500000, 6000000, 500000, ["Measured local K_VCO = 887 MHz/V (Review 1 used 669), so ζ = 0.33, not 0.29."], size=11)
+        ("Found", True, NAVY),
+        "Review 1 dropped the 1/(2π) of the charge-pump gain, so ζ was really 0.33, not 0.72.",
+        ("Fixed", True, NAVY),
+        "R2 1.7 → 3.6 kΩ (C1, C2, I_cp unchanged), verified at transistor level.",
+        ("Cost", True, NAVY),
+        "0 V cold start 839 → 1352 ns; both inside the 2 µs spec."], size=11)
+    text(s, X0, 5500000, 6000000, 500000, ["Measured local K_VCO = 887 MHz/V (Review 1 used 669)."], size=11)
+    scope(s)
+
+    # J3: lock across all five corners
+    s = S["lockcorn"] = new_slide(prs, "Lock Across All Five Corners", logo)
+    lcn = D["lock_corners"]
+    corners = ["ff", "sf", "tt", "fs", "ss"]
+    new_ns = [lcn[c]["3.6k"].get("lock_ns_5us", lcn[c]["3.6k"]["lock_ns"]) for c in corners]
+    ch = bar(s, X0, Y0 - 100000, 5600000, 4400000, corners,
+             [("lock time (ns)", new_ns, [CC[c] for c in corners])], labels_fmt="0",
+             xt="process corner (retuned loop, R2 = 3.6 kΩ)", yt="lock time from 0.85 V start (ns)", ymin=0, ymax=2200)
+    ch.has_legend = False
+    text(s, 6500000, Y0 - 100000, 5000000, 1500000, [
+        ("Retuned loop: all five corners lock inside the 2 µs spec", True, NAVY),
+        "Settled V_ctrl differs by corner (ss needs 0.968 V, the weakest NMOS); final f_VCO within 0.1 % of 226.2 MHz at ff, sf, tt, fs."], size=12)
+    rows = [("corner", "retuned lock", "final f_VCO", "original loop")]
+    for c in corners:
+        n, o = lcn[c]["3.6k"], lcn[c]["1.7k"]
+        f_new = f"{n['f_vco_MHz']:.1f} MHz" if c != "ss" else "settled (5 µs run)"
+        orig = (f"{o['lock_ns']:.0f} ns" if c == "tt" else
+                "1737 ns (5 µs run)" if c == "ss" else f"not settled at 2 µs ({o['f_vco_MHz']:.1f} MHz)")
+        rows.append((c, f"{new_ns[corners.index(c)]:.0f} ns", f_new, orig))
+    gt = s.shapes.add_table(len(rows), 4, 6500000, Y0 + 1450000, 5000000, 2600000).table
+    for i, row in enumerate(rows):
+        for j, v in enumerate(row):
+            cell = gt.cell(i, j)
+            cell.text = v
+            r = cell.text_frame.paragraphs[0].runs[0]
+            r.font.size, r.font.name, r.font.bold = Pt(10), "Calibri", i == 0
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = NAVY if i == 0 else (RGBColor(0xF2, 0xF4, 0xFB) if i % 2 else RGBColor(0xFF, 0xFF, 0xFF))
+            r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF) if i == 0 else DARK
+    text(s, 6500000, Y0 + 4150000, 5000000, 800000, [
+        "The original loop had not finished settling at ff/sf/fs/ss within the 2 µs run, so no lock time is quoted for it there. Corner runs use the coarse start; the 0 V cold start was run at tt only."], size=10)
     scope(s)
 
     # I: Monte Carlo charts
@@ -402,7 +433,7 @@ def build(prs, logo):
             ("2 / 5", "corners meeting ±0.3 % (ff, sf)", ORANGE),
             ("3.37 MHz", "Monte Carlo mean |drift| after 2nd-order (was 18.93)", TEAL),
             ("23 / 30", "seeds where 2nd-order beats 1st", TEAL),
-            ("839 ns", "lock from a true 0 V cold start (< 2 µs)", GREEN),
+            ("1352 ns", "lock from a true 0 V cold start, retuned loop (< 2 µs)", GREEN),
             ("15", "IEEE references; 1 patent narrowed our novelty claim", GREY)]
     for i, (a, b, col) in enumerate(nums):
         stat(s, X0 + (i % 4) * 2760000, Y0 + (i // 4) * 2000000, 2600000, 1800000, a, b, col)
@@ -437,7 +468,13 @@ def main(base, out):
             "Tempco ranks with NMOS drive at 0.9 V (sf 45 uA ... fs 28 uA): less overdrive => the threshold drop with temperature dominates => stronger positive tempco. Sign flips at V_ctrl = 1.4 V (-816 ppm/C). sf/fs bracket the range because sky130 skew corners shift NMOS Vth +/-27 mV (ss/ff +/-15 mV).",
         "669": "887",
         "(tt, 0.9V, fit-derivative)": "(tt, 0.9 V, local slope)",
-        "< 2us spec; ~450ns analytical": "< 2us spec; 573 ns averaged model",
+        "< 2us spec; ~450ns analytical": "< 2us spec",
+        "577 ns": "503 ns (was 577 ns)", "839 ns": "1352 ns (was 839 ns)",
+        "0.902 V": "0.9000 V (was 0.902)", "0.9002 V": "0.9000 V",
+        "227.96 MHz": "226.18 MHz (was 227.96)", "226.42 MHz": "225.98 MHz (was 226.42)",
+        "839 ns (0V cold start)": "1352 ns (0V cold start)",
+        "Coarse-tuned start (0.85V)": "Coarse-tuned start (0.85V), R2 = 3.6k",
+        "TRUE cold start (0V, boosted)": "TRUE cold start (0V, boosted), R2 = 3.6k",
         "580.2": "582", "763.6": "936", "669.3": "887", "568.2": "815", "688.7": "1018",
     }
     for sl in old:
@@ -450,8 +487,13 @@ def main(base, out):
                 if new is None and "they assume constant K_VCO, which is false." in t:
                     new = t.replace("they assume constant K_VCO, which is false.", "they assume constant K_VCO (false) and used a K_VCO ~25% too low (669 vs 887 MHz/V).")
                 if new is None and "Transistor-level charge pump; layout in Magic" in t:
-                    new = ("Retune the loop (zeta ~0.33 now; R2 ~3.6 kOhm for zeta ~0.7) and re-verify lock; "
-                           "transistor-level charge pump; layout in Magic, DRC, LVS (netgen), post-layout re-simulation.")
+                    new = ("Re-verify the retuned loop (zeta ~0.7, R2 = 3.6 kOhm) with a transistor-level charge pump; "
+                           "layout in Magic, DRC, LVS (netgen), post-layout re-simulation.")
+                for old_s, new_s in (("now locks in 839 ns.", "now locks in 1352 ns (retuned loop filter)."),
+                                     ("locks in 839 ns, comfortably inside the 2us spec -- worked on the first simulation attempt.",
+                                      "locks in 1352 ns with the retuned loop filter (839 ns with the original R2 = 1.7 kOhm), inside the 2us spec.")):
+                    if new is None and old_s in t:
+                        new = t.replace(old_s, new_s)
                 if new is not None and p.runs:
                     p.runs[0].text = new
                     for r in p.runs[1:]:
@@ -470,7 +512,7 @@ def main(base, out):
     o = {i + 1: sl for i, sl in enumerate(old)}
     order = [o[1], o[2], o[3], o[4], o[5], S["vco"], S["comp_arch"], S["acq"], S["method"], o[6],
              o[7], S["drift"], S["why"], S["curv"], o[8], S["comp_tt"], S["comp_corners"],
-             o[9], S["lock"], S["loopdyn"], o[10], S["mc"], S["keynums"], o[11], o[12], o[13]]
+             o[9], S["lock"], S["loopdyn"], S["lockcorn"], o[10], S["mc"], S["keynums"], o[11], o[12], o[13]]
     lst = prs.slides._sldIdLst
     by_id = {el.get("id"): el for el in lst}
     els = [by_id[str(sl.slide_id)] for sl in order]

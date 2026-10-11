@@ -53,7 +53,7 @@ def main(path, settle_after=1.5e-6, band_frac=0.02, f_ref_target=28.275e6, n_div
         "target_f_ref_MHz": round(f_ref_target / 1e6, 3),
         "target_f_vco_MHz": round(f_ref_target * n_div / 1e6, 1),
         "spec_lock_time_us": 2.0,
-        "analytical_lock_time_ns": 450,
+        "averaged_model_lock_time_ns": 573,  # scripts/loop_check.py, R2=1.7k, coarse start (the old 450 was withdrawn 2026-10-11)
     }
     print(json.dumps(result, indent=2))
     return result

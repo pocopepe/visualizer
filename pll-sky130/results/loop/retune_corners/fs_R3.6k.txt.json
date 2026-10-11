@@ -1,0 +1,10 @@
+{
+  "settled_vctrl_V": 0.9421,
+  "lock_time_ns": 575.6,
+  "div_fb_freq_MHz": 28.278,
+  "vco_out_freq_MHz": 226.211,
+  "target_f_ref_MHz": 28.275,
+  "target_f_vco_MHz": 226.2,
+  "spec_lock_time_us": 2.0,
+  "averaged_model_lock_time_ns": 573
+}

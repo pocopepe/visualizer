@@ -49,3 +49,12 @@ blocks/top/run_cold.log
 results/comp/holdout/*.cir
 results/comp/holdout/*.log
 results/comp/holdout/*.txt
+
+# raw closed-loop retune waveforms (~325 MB); regenerate: see results/loop/FINDINGS_RETUNE.md
+results/loop/retune/*.txt
+results/loop/retune/*.log
+results/loop/retune_corners/*.txt
+results/loop/retune_corners/*.log
+results/loop/retune_corners/.done
+results/loop/retune_corners/.analyzed
+results/loop/retune_corners/.ss5

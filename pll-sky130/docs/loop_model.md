@@ -34,7 +34,7 @@ Equivalent form: `ωn² = Icp · K_VCO[Hz/V] / (N · C1)` with K_VCO in Hz/V, **
 
 Original design target was fn ≈ 2 MHz, ζ ≈ 0.71. With the correct formula and K = 669 MHz/V, fn = 2 MHz would have needed C1 ≈ 10.6 pF, and with ζ = 0.71 an R2 correspondingly different; the 68 pF / 1.7 kΩ pair that was chosen actually lands at fn ≈ 0.8-0.9 MHz and ζ ≈ 0.3.
 
-**The loop as built is underdamped.** The transistor-level lock transient shows it: V_ctrl overshoots to ~0.92 V from the 0.85 V start, and the 0 V cold start rings (`results/loop/FINDINGS_COLDSTART.md`). It still meets the < 2 µs spec in the simulated runs, but it does not have the 70°-class phase margin Review 1 claimed.
+**The original loop (R2 = 1.7 kΩ) was underdamped; it has since been retuned to R2 = 3.6 kΩ (see "Retune" below).** The transistor-level lock transient shows it: V_ctrl overshoots to ~0.92 V from the 0.85 V start, and the 0 V cold start rings (`results/loop/FINDINGS_COLDSTART.md`). It still meets the < 2 µs spec in the simulated runs, but it does not have the 70°-class phase margin Review 1 claimed.
 
 ## Lock time: what actually matches what
 
@@ -46,10 +46,64 @@ Original design target was fn ≈ 2 MHz, ζ ≈ 0.71. With the correct formula a
 - The idealized behavioral charge pump (no switch resistance, no mismatch, no charge injection).
 - PFD reset delay (~2 inverter delays), not folded into the continuous-time formula.
 - C2's effect on phase margin (the third pole erodes margin further than the 100·ζ rule; at ζ ≈ 0.33 this matters, it is not negligible margin as the Review 1 text implied).
-- PVT variation. K_VCO varies with corner (local K_VCO at 0.9 V: sf 582, ff 936, tt 887, ss 815, fs 1018 MHz/V), so ωn and ζ (both ∝ √K_VCO) move by roughly -19 % (sf) to +7 % (fs) relative to tt at fixed R2/C1. Not simulated per corner.
+- PVT variation. K_VCO varies with corner (local K_VCO at 0.9 V: sf 582, ff 936, tt 887, ss 815, fs 1018 MHz/V), so ωn and ζ (both ∝ √K_VCO) move by roughly -19 % (sf) to +7 % (fs) relative to tt at fixed R2/C1. (Closed-loop corner runs now exist for the retune; see "Five corners" below.)
 
-## Review 3 item: retune R2
-At K = 887 MHz/V, ζ ≈ 0.7 needs R2 ≈ 3.6 kΩ (C1 = 68 pF, Icp = 20 µA, N = 8 held fixed; fn is unchanged at ~0.9 MHz since R2 does not enter ωn). **This has not been simulated.** Doing it properly means re-running the closed-loop tests (coarse-tuned lock, 0 V cold start with the boosted pump, then corners) with the new R2 and re-checking lock time, since a larger R2 also raises ripple on V_ctrl. Listed as a Review 3 task; not done here.
+## Retune: R2 = 1.7 kΩ → 3.6 kΩ (done and verified 2026-10-11)
+
+**Retuned loop filter: R2 = 3.6 kΩ** (C1 = 68 pF, C2 = 6.8 pF, Icp = 20 µA, N = 8, f_ref = 28.275 MHz all unchanged). **Original design: R2 = 1.7 kΩ.** The original numbers below are kept as the "before" of the correction, not deleted.
+
+### Design (K_VCO = 887 MHz/V, tt, 27 °C)
+
+| Quantity | Original (R2 = 1.7 kΩ) | Retuned (R2 = 3.6 kΩ) |
+|---|---|---|
+| fn | 0.91 MHz | 0.91 MHz (R2 does not enter ωn²) |
+| ζ = R2·C1·ωn/2 | 0.33 | **~0.70** |
+| Phase margin (≈ 100·ζ°; C2 ignored in the rule of thumb) | ~30-33° | **~65-70°** |
+
+Reason for the choice: the corrected ζ of the original filter was 0.33 (underdamped); ζ ≈ 0.7 needs R2 ≈ 3.6 kΩ at fixed C1, Icp, N. Only R2 = 1.7 k / 3.0 k / 3.6 k were simulated at transistor level (plus an averaged-model sweep over R2 = 1.7-6 kΩ). **The retuned design is not claimed to be optimal, and R2 above 3.6 kΩ was not simulated at transistor level.**
+
+### Transistor-level results, tt, 27 °C, coarse start 0.85 V (nominal charge pump)
+
+Lock = V_ctrl enters and stays within ±2 % of its final value (spec < 2 µs).
+
+| R2 | Lock | Peak V_ctrl | Final f_vco | V_ctrl ripple (last 0.5 µs) |
+|---|---|---|---|---|
+| 1.7 kΩ (original) | 577 ns | 0.930 V | 227.96 MHz (0.78 % high) | 8.6 mV p-p |
+| 3.0 kΩ | 538 ns | - | 226.33 MHz | - |
+| **3.6 kΩ (retuned)** | **503 ns** | 0.922 V | 226.18 MHz (0.008 % low) | **0.35 mV p-p** |
+
+### Transistor-level results, tt, 27 °C, TRUE 0 V cold start (5×-boosted charge pump until the first divider edge)
+
+| R2 | Lock | Peak V_ctrl | Final f_vco | V_ctrl ripple (last 0.5 µs) |
+|---|---|---|---|---|
+| 1.7 kΩ (original) | 839 ns | 1.008 V | 226.42 MHz | 2.6 mV |
+| 3.0 kΩ | 1318 ns | - | 225.88 MHz | - |
+| **3.6 kΩ (retuned)** | **1352 ns** | 1.001 V | 225.98 MHz (0.1 % low) | 0.35 mV |
+
+### Five corners, coarse 0.85 V start, nominal charge pump (corner runs: `results/loop/retune_corners/`)
+
+| Corner | R2 = 3.6 kΩ (retuned): lock | final f_vco (MHz) | R2 = 1.7 kΩ (original) |
+|---|---|---|---|
+| tt | 503 ns | 226.18 | 577 ns, 227.96 MHz |
+| ff | 241 ns | 226.17 | not settled by 2 µs: 225.17 MHz (0.45 % low) |
+| sf (fast-NMOS / slow-PMOS) | 419 ns | 226.39 | not settled by 2 µs: 229.13 MHz (1.3 % high) |
+| fs (slow-NMOS / fast-PMOS) | 576 ns | 226.21 | not settled by 2 µs: 228.90 MHz (1.2 % high) |
+| ss | 967 ns (5 µs run; settles to V_ctrl = 0.9677 V, 0.1 mV ripple) | 2 µs run: 224.56 (still settling) | 1737 ns in the 5 µs run (3.5 mV ripple); at 2 µs it was 3.6 % low (218.2 MHz) |
+
+**Honest note on the original loop:** at ff/sf/fs/ss the original (R2 = 1.7 kΩ) loop had **not finished settling within the original 2 µs run**, so lock times are not quoted for it at those corners, except ss, where a 5 µs run exists. This is itself a finding: the original loop was slow to settle away from tt, and the "577 ns" figure was a tt-only result. The retuned loop locks inside the 2 µs spec at all five corners and is slowest at ss (967 ns), the corner with the weakest NMOS, which needs V_ctrl ≈ 0.968 V. Corner runs used the coarse 0.85 V start and the plain charge pump (as in the tt coarse run); the 0 V cold start was simulated at tt only.
+
+### Lock-metric sensitivity (±2 % band)
+
+The tt 503 ns figure for R2 = 3.6 kΩ is set by a small overshoot to 0.922 V that sits just outside the ±2 % band (0.918 V) and decays into it at 503 ns. The averaged behavioural model (`scripts/loop_check.py`, with C2 included) has a slightly smaller overshoot, 0.914 V, and enters the band at about 110 ns. The two models agree on the dynamics, but the ±2 % band metric is sensitive at the band edge: a ~8 mV difference in overshoot moves the quoted lock time by hundreds of ns. (At R2 = 1.7 kΩ the averaged model gave 573 ns against 577 ns at transistor level.) Read the lock times together with the peak, final-frequency and ripple columns, not alone.
+
+### Trade-off, stated plainly
+
+- **Better:** damping (ζ 0.33 → 0.70), settling accuracy (coarse-start final frequency error 0.78 % → 0.008 %), V_ctrl ripple (8.6 → 0.35 mV p-p), coarse-start lock at tt (577 → 503 ns), and corner robustness (all five corners inside 2 µs).
+- **Worse:** the 0 V cold start is **slower**: 839 → 1352 ns (+61 %). Both are inside the < 2 µs spec, but the margin on the cold start shrinks from 2.4× to 1.5×.
+
+### What the retune does not change
+
+All open-loop results: tempcos, spans, compensation fits, held-out checks, Monte Carlo, K_VCO values, corner-label corrections. They use the free-running VCO with an ideal control voltage, so the loop filter does not enter them.
 
 ## Closed-loop testbench design point (`blocks/top/tb_closed_loop.spice`)
 - `.ic v(vctrl)=0.7` in the original design note — starts the loop away from the nominal 0.9 V lock point. (The accepted run used 0.85 V; see `results/loop/FINDINGS.md`.) The VCO oscillates down to well below this, only slowly (no hard floor; see `results/vco/FINDINGS.md`).
@@ -60,4 +114,6 @@ At K = 887 MHz/V, ζ ≈ 0.7 needs R2 ≈ 3.6 kΩ (C1 = 68 pF, Icp = 20 µA, N =
 
 **Changed (formula-derived, now corrected):** fn, ζ, phase margin, loop bandwidth, the "450 ns" prediction, the "~4.4× margin at the analytical level" claim, the "PFD reset delay explains the gap" explanation, and the K_VCO input (670 → ~890 MHz/V).
 
-**Unchanged (direct simulation results):** spans/tempcos (112/332/681/1070/1399 ppm/°C, 12.5× spread), 2nd-order spans, held-out checks, Monte Carlo statistics, lock times 577 ns (coarse start) and 839 ns (0 V cold start), per-corner C values, the tuning range 18 → 358 MHz over 0.65 → 1.40 V (tt), and the empirically refit compensation coefficients.
+**Unchanged by the errata pass (direct simulation results):** spans/tempcos (112/332/681/1070/1399 ppm/°C, 12.5× spread), 2nd-order spans, held-out checks, Monte Carlo statistics, lock times 577 ns (coarse start) and 839 ns (0 V cold start), per-corner C values, the tuning range 18 → 358 MHz over 0.65 → 1.40 V (tt), and the empirically refit compensation coefficients.
+
+**Update (retune, 2026-10-11):** the loop filter was then retuned to R2 = 3.6 kΩ. The lock times 577 ns / 839 ns above are the **original R2 = 1.7 kΩ design**; the retuned loop gives 503 ns (coarse) / 1352 ns (0 V cold start). See "Retune" above and `results/loop/FINDINGS_RETUNE.md`. The testbenches `blocks/top/tb_closed_loop*.spice` now instantiate R2 = 3.6 kΩ.

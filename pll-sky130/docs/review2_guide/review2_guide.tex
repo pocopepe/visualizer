@@ -20,7 +20,7 @@
 \begin{document}
 \maketitle
 \vspace{-1.5em}
-\noindent This guide explains everything done between Review 1 and Review 2, why it was done, the numbers to know, and how to answer the hard questions. Every number here comes from \texttt{results/figdata.json} or \texttt{scripts/analyze\_mc.py}, the same data the slides use, plus the post-review checks in \texttt{results/vco/}\allowbreak\texttt{kvco\_fine/}, \texttt{results/vco/}\allowbreak\texttt{floor\_check/} and \texttt{scripts/}\allowbreak\texttt{loop\_check.py}. Section~\ref{sec:corr} lists the corrections made after Review 2; read it, because the examiner may ask.
+\noindent This guide explains everything done between Review 1 and Review 2, why it was done, the numbers to know, and how to answer the hard questions. Every number here comes from \texttt{results/figdata.json} or \texttt{scripts/analyze\_mc.py}, the same data the slides use, plus the post-review checks in \texttt{results/vco/}\allowbreak\texttt{kvco\_fine/}, \texttt{results/vco/}\allowbreak\texttt{floor\_check/}, \texttt{scripts/}\allowbreak\texttt{loop\_check.py} and the loop-filter retune runs in \texttt{results/loop/}\allowbreak\texttt{retune/} and \texttt{results/loop/}\allowbreak\texttt{retune\_corners/}. Section~\ref{sec:corr} lists the corrections made after Review 2; read it, because the examiner may ask.
 
 \tableofcontents
 \newpage
@@ -28,7 +28,7 @@
 %=====================================================================
 \section{The story in 60 seconds}
 \begin{say}
-A ring-oscillator VCO changes frequency with temperature, so a PLL built around it has to work harder, or drop out of lock range, as the chip heats up. We built a complete integer-N charge-pump PLL in the open sky130 process and simulated it in ngspice. We measured the drift at all five process corners and found a 12.5$\times$ spread in temperature coefficient, not the 3.4$\times$ we reported in Review 1. We then designed a correction voltage that adds $k_1(T-27)+k_2(T-27)^2$ to the VCO control voltage. At the typical corner, the second-order version cuts the drift span from 8.51\% to 1.12\%. It meets our $\pm$0.3\% target only at the ff and sf corners. We validated the result at held-out temperatures and with a 30-sample Monte Carlo analysis using paired statistics. We also fixed the cold-start problem left open in Review 1: the loop now locks in 839 ns from 0 V.
+A ring-oscillator VCO changes frequency with temperature, so a PLL built around it has to work harder, or drop out of lock range, as the chip heats up. We built a complete integer-N charge-pump PLL in the open sky130 process and simulated it in ngspice. We measured the drift at all five process corners and found a 12.5$\times$ spread in temperature coefficient, not the 3.4$\times$ we reported in Review 1. We then designed a correction voltage that adds $k_1(T-27)+k_2(T-27)^2$ to the VCO control voltage. At the typical corner, the second-order version cuts the drift span from 8.51\% to 1.12\%. It meets our $\pm$0.3\% target only at the ff and sf corners. We validated the result at held-out temperatures and with a 30-sample Monte Carlo analysis using paired statistics. We also fixed the cold-start problem left open in Review 1: the loop now locks from a true 0 V start in 1352 ns. Auditing the loop afterwards, we found it was underdamped ($\zeta=0.33$), retuned the loop-filter resistor from 1.7 to 3.6 k$\Omega$, and verified by transistor-level simulation that $\zeta$ is now about 0.70 and the loop locks inside the 2 $\mu$s spec at all five corners. The price is a slower cold start (839 ns with the original filter).
 \end{say}
 
 \noindent\textbf{The three things Review 2 added}
@@ -45,7 +45,7 @@ A ring-oscillator VCO changes frequency with temperature, so a PLL built around 
 \item \textbf{Reference:} 28.275 MHz. The target output is $8\times$ that, $\approx$226 MHz.
 \item \textbf{PFD (phase-frequency detector):} compares the reference edge against the divided VCO edge and outputs UP or DN pulses in proportion to the phase error. It is built from edge detectors and NOR SR-latches rather than resettable D flip-flops, because a reliable asynchronous reset fights the latch's own feedback.
 \item \textbf{Charge pump:} converts UP/DN pulses into current pulses of $I_{cp}=20\,\mu$A into the loop filter. In Review 2 this is an idealised behavioural source; the transistor-level version is Review 3.
-\item \textbf{Loop filter:} $R_2=1.7\,$k$\Omega$ in series with $C_1=68\,$pF, and $C_2=6.8\,$pF in parallel. It integrates the current into a control voltage $V_{ctrl}$. $R_2$ adds the zero that keeps the loop stable; $C_2$ smooths the ripple.
+\item \textbf{Loop filter:} $R_2=3.6\,$k$\Omega$ (retuned; the original design used 1.7 k$\Omega$) in series with $C_1=68\,$pF, and $C_2=6.8\,$pF in parallel. It integrates the current into a control voltage $V_{ctrl}$. $R_2$ adds the zero that keeps the loop stable; $C_2$ smooths the ripple.
 \item \textbf{VCO:} a 5-stage current-starved ring. $V_{ctrl}$ sets the starving current, which sets the delay per stage and therefore the frequency. $K_{VCO}\approx890$ MHz/V at 0.9 V (tt, local slope). There is no hard oscillation floor: below about 0.65 V it is under 18 MHz, and at 0.5 V it is sub-MHz.
 \item \textbf{Divider $\div8$:} a chain of toggle flip-flops. It feeds the divided clock back to the PFD.
 \end{itemize}
@@ -149,18 +149,55 @@ fs & 17.49\% & 9.13\% & 5.31\% & 3.3$\times$ & 3.83\% & \textcolor{warn}{no}\\\b
 \begin{itemize}
 \item \textbf{The problem:} at 0 V the VCO is essentially off. There is no hard floor, but below about 0.65 V it runs under 18 MHz (under 8\% of the 226 MHz target) and at 0.5 V below 1 MHz, so the divided clock is effectively absent. The PFD sees only reference edges, and pumping up at the nominal 20 $\mu$A is too slow.
 \item \textbf{The fix:} the charge pump runs at $5\times I_{cp}$ until the divider produces its first edge. An edge detector feeding a one-shot latch (an integrating capacitor charged by a B-source, not a digital latch with an unknown initial state) then drops it back to 20 $\mu$A for normal, stable tracking.
-\item \textbf{Result:} lock in \textbf{839 ns} from a true 0 V start, and 577 ns from a coarse-tuned 0.85 V start. The spec is $<$2 $\mu$s. (Review 1's ``450 ns analytical prediction'' matched only by coincidence; see the loop-dynamics subsection.)
+\item \textbf{Result with the retuned loop filter ($R_2=3.6$ k$\Omega$):} lock in \textbf{1352 ns} from a true 0 V start, and \textbf{503 ns} from a coarse-tuned 0.85 V start (tt, 27 \textdegree C). Both are inside the $<$2 $\mu$s spec.
+\item \textbf{Original design ($R_2=1.7$ k$\Omega$), kept as the ``before'':} 839 ns from 0 V and 577 ns from 0.85 V. (Review 1's ``450 ns analytical prediction'' matched only by coincidence; see the loop-dynamics subsection.)
 \item \textbf{Lock definition:} $V_{ctrl}$ enters and stays within $\pm2\%$ of its final 0.9 V.
-\item \textbf{The ringing around 600--800 ns on the cold-start curve} is the loop capturing phase after the fast pump-up. It settles well inside the spec, and the loop is genuinely underdamped (next subsection). We have not separately attributed it to the boost switching off, so don't claim that.
+\item \textbf{The cold start is slower after the retune (839 $\to$ 1352 ns, +61\%).} We do not hide this: it is the price of the better damping. Cold-start peak $V_{ctrl}$ is 1.001 V (1.008 V originally). Do not claim that the retune made everything faster; only the coarse-start lock is faster.
+\item \textbf{The ringing around 600--800 ns on the original cold-start curve} is the loop capturing phase after the fast pump-up. It settled inside the spec, but the original loop was genuinely underdamped (next subsection). We have not separately attributed it to the boost switching off, so don't claim that.
 \end{itemize}
+\begin{center}
+\begin{tabular}{lrr}\toprule
+tt, 27 \textdegree C & Original, $R_2$ = 1.7 k$\Omega$ & Retuned, $R_2$ = 3.6 k$\Omega$\\\midrule
+Lock, coarse 0.85 V start & 577 ns & 503 ns\\
+Lock, true 0 V cold start & 839 ns & 1352 ns\\
+Peak $V_{ctrl}$ (coarse start) & 0.930 V & 0.922 V\\
+Final $f_{VCO}$ (coarse start) & 227.96 MHz (0.78\% high) & 226.18 MHz (0.008\% low)\\
+$V_{ctrl}$ ripple, last 0.5 $\mu$s & 8.6 mV p-p & 0.35 mV p-p\\\bottomrule
+\end{tabular}
+\end{center}
+\noindent An intermediate $R_2=3.0$ k$\Omega$ was also simulated: 538 ns (coarse) and 1318 ns (cold start).
+\begin{center}\includegraphics[width=0.7\linewidth]{lock_compare.png}\end{center}
+\noindent\textit{Coarse 0.85 V start, tt: original (orange) rings and is still about 0.8\% off in frequency at 2 $\mu$s; retuned (blue) settles smoothly.}
 
-\subsection{Loop dynamics, honestly}
+\subsection{Loop dynamics, honestly: found, fixed, verified}
 \begin{itemize}
-\item \textbf{Result:} with $R_2=1.7$ k$\Omega$, $C_1=68$ pF, $I_{cp}=20\,\mu$A, $N=8$ and the measured $K_{VCO}=887$ MHz/V, the natural frequency is $f_n\approx0.91$ MHz and the damping is $\zeta\approx0.33$. Phase margin is about 30--33\textdegree\ (the $100\zeta$ rule; $C_2$ erodes it a little more). The loop is \textbf{underdamped}: from a 0.85 V start $V_{ctrl}$ overshoots to about 0.92 V, and the cold start rings.
+\item \textbf{Found:} with the original $R_2=1.7$ k$\Omega$, $C_1=68$ pF, $I_{cp}=20\,\mu$A, $N=8$ and the measured $K_{VCO}=887$ MHz/V, the natural frequency is $f_n\approx0.91$ MHz and the damping is $\zeta\approx0.33$. Phase margin is about 30--33\textdegree\ (the $100\zeta$ rule; $C_2$ erodes it a little more). The loop was \textbf{underdamped}: from a 0.85 V start $V_{ctrl}$ overshot to 0.93 V, and the cold start rang.
 \item \textbf{What Review 1 got wrong:} it put $K_{VCO}$ in rad/s/V into $\omega_n^2=I_{cp}K_{VCO}/(NC_1)$ and \emph{dropped the $1/2\pi$} of the PFD/charge-pump gain ($I_{cp}/2\pi$ per radian). The correct form is $\omega_n^2=I_{cp}K_{VCO,rad}/(2\pi NC_1)$ and $\zeta=R_2C_1\omega_n/2$. Review 1 therefore claimed $f_n=1.98$ MHz, $\zeta=0.72$, 70--72\textdegree\ margin, 2.85 MHz bandwidth and a 450 ns lock; with the same wrong 669 MHz/V and the right formula one gets $f_n=0.79$ MHz and $\zeta=0.29$.
-\item \textbf{The measured lock times stand.} An independent averaged behavioural model (\texttt{scripts/}\allowbreak\texttt{loop\_check.py}, driven by the measured tuning curve) gives 573 ns from 0.85 V against 577 ns at transistor level. The 450 ns ``prediction'' matched only by coincidence. Without the $5\times$ boost, the averaged model from 0 V does not settle (the pump saturates, overshoot 1.79 V), consistent with the cold-start problem.
-\item \textbf{Review 3 item:} $\zeta\approx0.7$ at 887 MHz/V needs $R_2\approx3.6$ k$\Omega$. This is \emph{not simulated}; it needs the closed-loop tests re-run. The $<2\,\mu$s spec is still met by the simulations we did run.
+\item \textbf{Fixed:} $\zeta$ depends only on $R_2$ at fixed $f_n$, so we raised $R_2$ from 1.7 to \textbf{3.6 k$\Omega$}. $f_n$ stays about 0.91 MHz, $\zeta$ goes from 0.33 to about \textbf{0.70}, and the phase margin from about 30\textdegree\ to about \textbf{65--70\textdegree} (100$\zeta$ rule). Nothing else in the loop changed ($I_{cp}$, $C_1$, $C_2$, $N$, $f_{ref}$).
+\item \textbf{Verified at transistor level (tt, coarse start):} ripple 8.6 $\to$ 0.35 mV p-p, final frequency error 0.78\% $\to$ 0.008\%, peak $V_{ctrl}$ 0.930 $\to$ 0.922 V, lock 577 $\to$ 503 ns. The independent averaged model (\texttt{scripts/}\allowbreak\texttt{loop\_check.py}, driven by the measured tuning curve) gave 573 ns against 577 ns for the original loop, so it was a trustworthy check of the measured lock times; the 450 ns ``prediction'' matched only by coincidence. Without the $5\times$ boost, the averaged model from 0 V does not settle (the pump saturates, overshoot 1.79 V), consistent with the cold-start problem.
+\item \textbf{The trade-off:} the 0 V cold start is slower (839 $\to$ 1352 ns). Both are within the 2 $\mu$s spec.
 \end{itemize}
+\begin{careful}
+\textbf{Limits of the retune claim.} Only $R_2=1.7$, 3.0 and 3.6 k$\Omega$ were simulated at transistor level (plus an averaged-model sweep of 1.7--6 k$\Omega$). We do not claim 3.6 k$\Omega$ is optimal, and values above 3.6 k$\Omega$ were not simulated at transistor level. The 503 ns figure is set by a small overshoot to 0.922 V that sits just outside the $\pm2\%$ band (0.918 V) and decays into it; the averaged model has a slightly smaller overshoot (0.914 V) and enters the band at about 110 ns. The models agree on the dynamics, but the $\pm2\%$ band metric is sensitive at the band edge, so quote 503 ns as a transistor-level number, not as a precise property of the loop. The 0 V cold start was simulated at tt only.
+\end{careful}
+
+\subsection{Lock across all five corners}
+Coarse 0.85 V start, nominal charge pump (no boost), as in the tt coarse run. Lock is $V_{ctrl}$ staying within $\pm2\%$ of its final value; spec $<$2 $\mu$s.
+\begin{center}
+\small\begin{tabular}{lrrp{6.6cm}}\toprule
+Corner & Retuned lock & Retuned final $f_{VCO}$ (MHz) & Original ($R_2$ = 1.7 k$\Omega$)\\\midrule
+tt & 503 ns & 226.18 & 577 ns, 227.96 MHz\\
+ff & 241 ns & 226.17 & not settled by 2 $\mu$s: 225.17 MHz (0.45\% low)\\
+sf & 419 ns & 226.39 & not settled by 2 $\mu$s: 229.13 MHz (1.3\% high)\\
+fs & 576 ns & 226.21 & not settled by 2 $\mu$s: 228.90 MHz (1.2\% high)\\
+ss & 967 ns & 224.56 (2 $\mu$s run, still settling) & 1737 ns in a 5 $\mu$s run; at 2 $\mu$s it was 3.6\% low (218.2 MHz)\\\bottomrule
+\end{tabular}
+\end{center}
+\begin{itemize}
+\item The retuned loop locks inside the 2 $\mu$s spec at all five corners. It is slowest at ss (967 ns; ss needs $V_{ctrl}\approx0.968$ V, the corner with the weakest NMOS). The ss lock time and its settled value ($V_{ctrl}=0.9677$ V, 0.1 mV ripple) come from a 5 $\mu$s run; in the 2 $\mu$s run ss is still settling at 224.56 MHz.
+\item \textbf{Honest note:} the original loop had \emph{not} finished settling at ff, sf, fs or ss within its 2 $\mu$s run. So we quote no original lock time for those corners, except ss (from the 5 $\mu$s run, 1737 ns, 3.5 mV ripple). The comparison there is the frequency error left at 2 $\mu$s, not a time.
+\end{itemize}
+\begin{center}\includegraphics[width=0.55\linewidth]{lock_corners.png}\end{center}
 
 %=====================================================================
 \section{Methodology and research framing}
@@ -172,6 +209,7 @@ fs & 17.49\% & 9.13\% & 5.31\% & 3.3$\times$ & 3.83\% & \textcolor{warn}{no}\\\b
 
 %=====================================================================
 \section{Slide-by-slide talking points}
+\noindent\textit{Numbers follow the 27-slide deck: 25 is Challenges, 26 References, 27 Thank you.}
 \begin{enumerate}[label=\textbf{\arabic*.}]
 \item \textbf{Title.} Names, guide, date.
 \item \textbf{Introduction.} Problem, objectives, and what changed since Review 1: the 5-corner grid, the cold-start fix, and 2nd-order compensation.
@@ -179,21 +217,24 @@ fs & 17.49\% & 9.13\% & 5.31\% & 3.3$\times$ & 3.83\% & \textcolor{warn}{no}\\\b
 \item[5.] \textbf{Architecture.} Walk the loop from REF to $\div8$, and name the two deliberate simplifications (ideal charge pump, latch-based PFD).
 \item[6.] \textbf{VCO.} $\approx$890 MHz/V local slope at 0.9 V (tt); no hard floor, under 18 MHz below 0.65 V; 0.9 V gives 226 MHz.
 \item[7.] \textbf{Compensation architecture.} $\Delta V(T)$ added before the bias generator; 1st vs 2nd order; per corner.
-\item[8.] \textbf{Cold-start fix.} Problem, then the $5\times$ boost until the first edge.
+\item[8.] \textbf{Cold-start fix.} Problem, then the $5\times$ boost until the first edge. Lock from 0 V is now 1352 ns with the retuned loop filter.
 \item[9.] \textbf{Methodology.} Grey is Review 1, blue is design, green is validation. The green steps are there to stop us fooling ourselves.
 \item[10.] \textbf{Implementation.} The modules, the coefficient derivation, the hand-written statistics, and the B-source line.
 \item[11.] \textbf{Results table.} 12.5$\times$ spread; tempco ranks with NMOS drive (sf fast-NMOS lowest, fs slow-NMOS highest).
 \item[12.] \textbf{Drift chart.} Every corner is outside $\pm$0.3\%; fs is the worst.
-\item[13.] \textbf{Curvature.} The bars would be equal if the drift were linear; they fall 3.2$\times$, which justifies $k_2$.
-\item[14.] \textbf{Per-corner table.} Everything improves; the spec is met at ff and sf only.
-\item[15.] \textbf{tt compensation chart.} 8.51 $\to$ 1.12\%; the naive curve (red dashed) failed; the held-out points pass.
-\item[16.] \textbf{Per-corner chart.} Log scale; the green line is the spec. Say plainly: ``not met at tt, ss or fs''.
-\item[17.] \textbf{Closed-loop table.} 577 / 839 ns; the two Review 1 bugs; the loop is underdamped ($\zeta\approx0.3$).
-\item[18.] \textbf{Lock chart.} Point at the boost carrying $V_{ctrl}$ quickly through the region below $\sim$0.65 V where the VCO is nearly off (not a hard floor), and at the ringing.
-\item[19.] \textbf{MC and benchmark table.} Comparable to published work, but ours is simulation and theirs is silicon.
-\item[20.] \textbf{MC charts.} Points below the diagonal are chips where 2nd order won (23/30).
-\item[21.] \textbf{At a glance.} Eight numbers.
-\item[22.] \textbf{Challenges and remaining work.} The honest list, then Review 3.
+\item[13.] \textbf{Why the corners order this way.} Tempco versus NMOS drive current: sf 45 $\mu$A (112 ppm/\textdegree C) to fs 28 $\mu$A (1399). Say sf = fast-NMOS, fs = slow-NMOS, and that the tempco flips sign at 1.4 V ($-816$ ppm/\textdegree C).
+\item[14.] \textbf{Curvature.} The bars would be equal if the drift were linear; they fall 3.2$\times$, which justifies $k_2$.
+\item[15.] \textbf{Per-corner table.} Everything improves; the spec is met at ff and sf only.
+\item[16.] \textbf{tt compensation chart.} 8.51 $\to$ 1.12\%; the naive curve (red dashed) failed; the held-out points pass.
+\item[17.] \textbf{Per-corner chart.} Log scale; the green line is the spec. Say plainly: ``not met at tt, ss or fs''.
+\item[18.] \textbf{Closed-loop table (both designs).} Original $R_2$ = 1.7 k$\Omega$ against retuned 3.6 k$\Omega$: coarse lock 577 $\to$ 503 ns, cold start 839 $\to$ 1352 ns, $\zeta$ 0.33 $\to$ 0.70, ripple 8.6 $\to$ 0.35 mV. State the trade-off yourself: the cold start got slower.
+\item[19.] \textbf{Lock transient (retuned loop).} 503 ns from 0.85 V, 1352 ns from a true 0 V start (it was 839 ns with the original filter: say so). Point at the boost carrying $V_{ctrl}$ quickly through the region below $\sim$0.65 V where the VCO is nearly off (not a hard floor) on the cold-start curve.
+\item[20.] \textbf{Loop dynamics.} The chart overlays original (orange: rings, still off at 2 $\mu$s) and retuned (blue: settles). Found (Review 1 dropped $1/2\pi$, $\zeta$ was 0.33), fixed ($R_2$ 3.6 k$\Omega$, $\zeta\approx0.70$, PM $\sim$65--70\textdegree), verified (transistor-level). Say that only 1.7 / 3.0 / 3.6 k$\Omega$ were simulated and 3.6 is not claimed optimal.
+\item[21.] \textbf{Lock across all five corners.} ff 241, sf 419, tt 503, fs 576, ss 967 ns, all inside 2 $\mu$s. Say plainly that the original loop had not settled at ff/sf/fs/ss within its 2 $\mu$s run, so there is no old lock time to compare at those corners.
+\item[22.] \textbf{MC and benchmark table.} Comparable to published work, but ours is simulation and theirs is silicon.
+\item[23.] \textbf{MC charts.} Points below the diagonal are chips where 2nd order won (23/30).
+\item[24.] \textbf{At a glance.} Eight numbers.
+\item[25.] \textbf{Challenges and remaining work.} The honest list, then Review 3.
 \end{enumerate}
 
 %=====================================================================
@@ -201,17 +242,19 @@ fs & 17.49\% & 9.13\% & 5.31\% & 3.3$\times$ & 3.83\% & \textcolor{warn}{no}\\\b
 \begin{center}
 \begin{tabular}{ll}\toprule
 Reference / output / N & 28.275 MHz / $\approx$226 MHz / 8\\
-Loop filter, $I_{cp}$ & $R_2$ 1.7 k$\Omega$, $C_1$ 68 pF, $C_2$ 6.8 pF; 20 $\mu$A\\
+Loop filter, $I_{cp}$ & $R_2$ 3.6 k$\Omega$ (retuned; original 1.7), $C_1$ 68 pF, $C_2$ 6.8 pF; 20 $\mu$A\\
 $K_{VCO}$ (tt, 0.9 V, local) & $\approx$890 MHz/V (887); sf/ff/ss/fs 580/940/820/1020\\
 VCO at low $V_{ctrl}$ & no hard floor; 18.0 MHz at 0.65 V, 0.63 MHz at 0.5 V\\
-Loop: $f_n$, $\zeta$, PM & 0.91 MHz, 0.33, $\sim$30\textdegree; retune $R_2\approx3.6$ k$\Omega$ in Review 3\\
+Loop: $f_n$, $\zeta$, PM & 0.91 MHz; $\zeta$ 0.33 $\to$ 0.70; PM $\sim$30 $\to$ $\sim$65--70\textdegree\ (retune)\\
+Loop ripple, final error (tt) & 8.6 $\to$ 0.35 mV; 0.78\% $\to$ 0.008\%\\
 Tempco sf/ff/tt/ss/fs & 112 / 332 / 681 / 1070 / 1399 ppm/\textdegree C (12.5$\times$)\\
 tt span: base $\to$ 1st $\to$ 2nd & 8.51 $\to$ 3.05 $\to$ 1.12\%, $C=7.57\times$\\
 tt max$|$dev$|$ (2nd) & 0.87\% (spec $\pm$0.3\%)\\
 Spec met at & ff (0.07\%), sf (0.15\%)\\
 MC mean $|$drift$|$ & 18.93 / 5.85 / 3.37 MHz\\
 2nd vs 1st & $-2.48$ MHz, CI [0.81, 4.15], 23/30 seeds\\
-Lock & 577 ns (0.85 V start; averaged model 573), 839 ns (0 V), spec $<$2 $\mu$s\\
+Lock, tt, retuned (original) & 503 ns (577) from 0.85 V; 1352 ns (839) from 0 V; spec $<$2 $\mu$s\\
+Lock, retuned, 0.85 V start & ff 241, sf 419, tt 503, fs 576, ss 967 ns\\
 Temperatures & $-40$, $-20$, 0, 27, 50, 85; held-out $-30$, 10, 40, 70\\\bottomrule
 \end{tabular}
 \end{center}
@@ -219,7 +262,7 @@ Temperatures & $-40$, $-20$, 0, 27, 50, 85; held-out $-30$, 10, 40, 70\\\bottomr
 %=====================================================================
 \section{Corrections made after Review 2}\label{sec:corr}
 \begin{owned}
-After the slides were made we re-checked the work and corrected five things; say so openly. \textbf{(1)} The sf/fs labels were backwards: sf is fast-NMOS / slow-PMOS and fs is slow-NMOS / fast-PMOS. \textbf{(2)} The tempco explanation (``mismatched corners balance the current sources'') was wrong; the tempco follows NMOS overdrive, and the sign flips at higher $V_{ctrl}$ (tt, 1.4 V: $-816$ ppm/\textdegree C). \textbf{(3)} $K_{VCO}$ was 669 MHz/V from a quadratic fit over the whole curve; the local value at 0.9 V is $\approx$890 MHz/V (887), which also explains part of the analytic $k_2$ over-correction. \textbf{(4)} Review 1's loop design dropped a $1/2\pi$: the loop is underdamped ($\zeta\approx0.33$, $\sim$30\textdegree\ margin, not 0.72 and 70\textdegree), though the measured lock times are confirmed by an independent model (573 vs 577 ns). \textbf{(5)} The ``0.63 V oscillation floor'' was an artefact of a short simulation window; the ring keeps oscillating at low frequency. \textbf{Unchanged:} spans, tempcos (112/332/681/1070/1399), the 2nd-order results, held-out checks, Monte Carlo statistics and lock times are direct simulation results.
+After the slides were made we re-checked the work and corrected five things and fixed one of them; say so openly. \textbf{(1)} The sf/fs labels were backwards: sf is fast-NMOS / slow-PMOS and fs is slow-NMOS / fast-PMOS. \textbf{(2)} The tempco explanation (``mismatched corners balance the current sources'') was wrong; the tempco follows NMOS overdrive, and the sign flips at higher $V_{ctrl}$ (tt, 1.4 V: $-816$ ppm/\textdegree C). \textbf{(3)} $K_{VCO}$ was 669 MHz/V from a quadratic fit over the whole curve; the local value at 0.9 V is $\approx$890 MHz/V (887), which also explains part of the analytic $k_2$ over-correction. \textbf{(4)} Review 1's loop design dropped a $1/2\pi$, so the original loop ($R_2=1.7$ k$\Omega$) was underdamped ($\zeta\approx0.33$, $\sim$30\textdegree\ margin, not 0.72 and 70\textdegree), though its measured lock times were confirmed by an independent model (573 vs 577 ns). \emph{This is now fixed and verified:} $R_2$ was retuned to 3.6 k$\Omega$ ($\zeta\approx0.70$, PM $\sim$65--70\textdegree) and re-simulated at transistor level: ripple 8.6 $\to$ 0.35 mV, frequency error 0.78\% $\to$ 0.008\%, coarse lock 577 $\to$ 503 ns, cold-start lock 839 $\to$ 1352 ns (slower, within spec), and lock inside 2 $\mu$s at all five corners (ss slowest, 967 ns). \textbf{(5)} The ``0.63 V oscillation floor'' was an artefact of a short simulation window; the ring keeps oscillating at low frequency. \textbf{Unchanged:} spans, tempcos (112/332/681/1070/1399), the 2nd-order results, held-out checks, Monte Carlo statistics and the open-loop results are direct simulation results; the compensation and Monte Carlo use the free-running VCO with an ideal control voltage, so the loop retune does not touch them.
 \end{owned}
 
 %=====================================================================
@@ -246,7 +289,11 @@ After the slides were made we re-checked the work and corrected five things; say
 
 \qa{Why does the frequency increase with temperature?}{At 0.9 V the NMOS starving transistor has little overdrive, so the fall of $V_{th}$ with temperature beats the fall of mobility and the current rises. At higher $V_{ctrl}$ the tempco flips sign: tt at 1.4 V is $-816$ ppm/\textdegree C, so a zero-tempco bias point exists. The sign flip and the corner ordering support this; it is still an interpretation, because we did not run a separate isolation experiment.}
 
-\qa{Is your loop stable? What is your phase margin?}{Stable, but underdamped. With the measured $K_{VCO}=887$ MHz/V: $f_n\approx0.91$ MHz, $\zeta\approx0.33$, phase margin about 30--33\textdegree. Review 1 claimed 0.72 and 70\textdegree\ because it dropped the $1/2\pi$ in the charge-pump gain. The measured lock times are still valid, since an independent averaged model reproduces 573 ns against 577 ns at transistor level. We would raise $R_2$ to about 3.6 k$\Omega$ for $\zeta\approx0.7$ in Review 3, but that is not simulated yet.}
+\qa{Is your loop stable? What is your phase margin?}{Yes, and now well damped. With the measured $K_{VCO}=887$ MHz/V and the retuned $R_2=3.6$ k$\Omega$: $f_n\approx0.91$ MHz, $\zeta\approx0.70$, phase margin about 65--70\textdegree\ (the $100\zeta$ rule, an estimate, not a measured Bode plot). The original $R_2=1.7$ k$\Omega$ gave $\zeta\approx0.33$ and about 30\textdegree: stable but underdamped. Review 1 claimed 0.72 and 70\textdegree\ for that filter only because it dropped the $1/2\pi$ in the charge-pump gain. We found that, retuned, and verified it by transistor-level simulation.}
+
+\qa{Why did you retune $R_2$, and what did it cost?}{Because the corrected formulas ($\omega_n^2=I_{cp}K_{VCO,rad}/(2\pi NC_1)$, $\zeta=R_2C_1\omega_n/2$) showed the original 1.7 k$\Omega$ gave $\zeta=0.33$. Raising it to 3.6 k$\Omega$ keeps $f_n\approx0.91$ MHz and gives $\zeta\approx0.70$. Verified at transistor level (tt, 0.85 V start): ripple 8.6 $\to$ 0.35 mV p-p, final frequency error 0.78\% $\to$ 0.008\%, lock 577 $\to$ 503 ns. The cost: the true 0 V cold start is slower, 839 $\to$ 1352 ns (+61\%). Both are inside the 2 $\mu$s spec. We simulated only 1.7, 3.0 and 3.6 k$\Omega$, so we do not claim 3.6 is optimal.}
+
+\qa{Does it lock at every corner?}{Yes, the retuned loop does, from a 0.85 V start with the nominal charge pump: ff 241 ns, sf 419, tt 503, fs 576 and ss 967 ns, all inside 2 $\mu$s. ss is slowest because it needs $V_{ctrl}\approx0.968$ V and has the weakest NMOS. The ss figure is from a 5 $\mu$s run (in the 2 $\mu$s run it is still settling at 224.56 MHz). Honest caveat: the original loop had not finished settling at ff/sf/fs/ss within its 2 $\mu$s run (0.45\% low, 1.3\% high, 1.2\% high and 3.6\% low at 2 $\mu$s), so we give no old lock times there, except ss at 1737 ns from the 5 $\mu$s run. The 0 V cold start was simulated only at tt.}
 
 \qa{Why does sf have a lower tempco than ff? Isn't ff the fastest?}{sf is fast-NMOS / slow-PMOS, and the NMOS drive sets the starving current. sf has the most NMOS drive (45.1 $\mu$A at 0.9 V against 42.8 for ff), so the threshold-versus-mobility trade is closest to its zero-tempco point. The skew corners shift NMOS $V_{th}$ by $\pm27$ mV against $\pm15$ mV for ss/ff, so they are the extremes. Note ff is the fastest in frequency (279 MHz); sf is only the fastest in NMOS current.}
 
@@ -254,7 +301,7 @@ After the slides were made we re-checked the work and corrected five things; say
 
 \qa{Does the VCO really stop at 0.63 V?}{No. That was an artefact of a short simulation window. With long windows the ring keeps oscillating in subthreshold: 41.3, 18.0, 6.47, 2.09 and 0.63 MHz at 0.70, 0.65, 0.60, 0.55 and 0.50 V. The correct statement is that there is no hard floor, but below about 0.65 V the VCO is under 8\% of the target, so from a 0 V start the divided clock is effectively absent. The cold-start fix is unchanged: the PFD sees only reference edges and the nominal 20 $\mu$A pump is too slow.}
 
-\qa{What does the acquisition boost do to stability?}{It is only active before the first divider edge, while the loop is still open. After that, the charge pump runs at the nominal 20 $\mu$A for which the loop was designed, so stability during tracking is unchanged.}
+\qa{What does the acquisition boost do to stability?}{It is only active before the first divider edge, while the loop is still open. After that, the charge pump runs at the nominal 20 $\mu$A for which the loop was designed, (and for which $\zeta\approx0.70$ with the retuned $R_2$), so stability during tracking is unaffected by the boost. The retune does change the cold start itself: from 0 V it now takes 1352 ns instead of 839 ns.}
 
 \qa{Why a latch-based PFD?}{A resettable-D-flip-flop PFD needs a clean asynchronous reset. In our hand-built cells, that reset fought the latch's bistable feedback. Edge detectors plus NOR SR-latches were reliable, and the PFD was verified standalone in Review 1.}
 
@@ -269,6 +316,7 @@ After the slides were made we re-checked the work and corrected five things; say
 \item[Compensation ratio $C$] Baseline span divided by compensated span. Bigger is better.
 \item[PTAT / CTAT] Proportional / complementary to absolute temperature: bias sources that rise or fall linearly with $T$.
 \item[$K_{VCO}$] The VCO gain, $df/dV_{ctrl}$, quoted as the local slope at 0.9 V (about 890 MHz/V at tt).
+\item[Damping ratio $\zeta$ / phase margin] How well damped the loop is; $\zeta=R_2C_1\omega_n/2$. Phase margin is about $100\zeta$ degrees. Original loop: 0.33, $\sim$30\textdegree; retuned: 0.70, $\sim$65--70\textdegree.
 \item[Lock time] Time until $V_{ctrl}$ stays within $\pm2\%$ of its final value.
 \item[Seed] One Monte Carlo sample, i.e.\ one random mismatch instance (a virtual chip).
 \item[Paired t-test / Wilcoxon] Tests on per-seed differences. The t-test assumes normality; Wilcoxon uses ranks and does not.

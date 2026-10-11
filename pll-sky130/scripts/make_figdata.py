@@ -97,6 +97,21 @@ def main():
     out["lock_coarse"] = trace(ROOT / "results/loop/run4_icfix.txt", 250)
     out["lock_cold"] = trace(ROOT / "blocks/top/results_loop_coldstart.txt", 375)
 
+    # retuned loop filter (R2 = 3.6k), results/loop/retune*: tt traces + per-corner lock
+    out["lock_coarse_new"] = trace(ROOT / "results/loop/retune/coarse_R3.6k.txt", 250)
+    out["lock_cold_new"] = trace(ROOT / "results/loop/retune/cold_R3.6k.txt", 375)
+    lc = {}
+    for c in ("ff", "sf", "fs", "ss"):
+        row = {}
+        for R in ("1.7k", "3.6k"):
+            j = json.loads((ROOT / f"results/loop/retune_corners/{c}_R{R}.txt.json").read_text())
+            row[R] = {"lock_ns": j["lock_time_ns"], "f_vco_MHz": j["vco_out_freq_MHz"]}
+        lc[c] = row
+    # ss did not finish settling in the 2 us run for either design; the 5 us run (numpy, last 1 us as 'final') is authoritative
+    lc["ss"]["1.7k"]["lock_ns_5us"], lc["ss"]["3.6k"]["lock_ns_5us"] = 1736.8, 966.7
+    lc["tt"] = {"1.7k": {"lock_ns": 576.6, "f_vco_MHz": 227.963}, "3.6k": {"lock_ns": 503.1, "f_vco_MHz": 226.183}}
+    out["lock_corners"] = lc
+
     base_span = out["comp"]["tt"]["span"][0]
     alpha = [(0.0, 1.0)]
     for a in (0.25, 0.5, 0.75, 1.25):

@@ -15,7 +15,10 @@ Vref ref 0 PULSE(0 1.8 0 100p 100p 17.686n 35.371n)
 
 Xpfd  ref div_fb up dn vdd 0 PFD
 Xcp   up dn vctrl vdd 0 CHARGE_PUMP icp=20u
-Xlf   vctrl 0 LOOP_FILTER r2=1.7k c1=68p c2=6.8p
+* Loop filter retuned 2026-10-11: R2 = 3.6k (zeta ~0.70, PM ~65-70 deg at K_VCO = 887 MHz/V).
+* The ORIGINAL R2 = 1.7k results (zeta ~0.33) are kept in results/loop/retune/ and
+* results/loop/retune_corners/ (R2 = 1.7k / 3.0k / 3.6k runs). See docs/loop_model.md.
+Xlf   vctrl 0 LOOP_FILTER r2=3.6k c1=68p c2=6.8p
 Xvco  vctrl vdd 0 vco_out VCO_RING nstages=5 wn_inv=1.0 ln_inv=0.5 wp_inv=2.0 lp_inv=0.5 wcs=2.0 lcs=0.5
 Xdiv  vco_out div_fb vdd 0 DIV8
 
