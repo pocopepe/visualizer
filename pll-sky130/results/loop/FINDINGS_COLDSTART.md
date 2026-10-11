@@ -1,6 +1,6 @@
 # Cold-Start Acquisition — Fixed and Verified
 
-**Risk (open since Review 1):** the accepted closed-loop lock result (577ns) started from `.ic v(vctrl)=0.85V` — a "coarse-tuned start" inside the VCO's confirmed-oscillating range, not a true cold start. `results/loop/FINDINGS.md` documented that starting from 0V drove the charge pump into a multi-microsecond constant-current dead zone before the VCO ever crossed its oscillation threshold and the divider started toggling.
+**Risk (open since Review 1):** the accepted closed-loop lock result (577ns) started from `.ic v(vctrl)=0.85V` — a "coarse-tuned start" inside the VCO's usable range, not a true cold start. `results/loop/FINDINGS.md` documented that starting from 0V drove the charge pump into a multi-microsecond constant-current dead zone before the VCO reached a useful frequency (it is under 18 MHz below ~0.65 V and sub-MHz at 0.5 V; there is no hard oscillation floor, corrected 2026-10-11) and the divider started toggling. The PFD therefore sees only REF edges and the nominal 20 µA pump is too slow to climb out.
 
 ## The fix
 
@@ -16,7 +16,7 @@
 | Settled Vctrl | 0.9002 V | 0.902 V |
 | Settled VCO frequency | 226.42 MHz | 227.96 MHz |
 
-The cold-start number is slower (839ns vs 577ns) because it includes real acquisition time the coarse-tuned start skipped — that's expected and correct, not a regression. Trajectory confirms the intended two-phase behavior: vctrl ramps fast (0V→~0.9V by ~596ns, boosted 5×), slightly overshoots (to ~0.975V by 695ns) as the divider's first edges arrive and the boost cuts out, then settles into normal fine-lock dynamics from ~900ns onward — matching the loop model's ~450ns fine-lock prediction added on top of the acquisition ramp.
+The cold-start number is slower (839ns vs 577ns) because it includes real acquisition time the coarse-tuned start skipped — that's expected and correct, not a regression. Trajectory confirms the intended two-phase behavior: vctrl ramps fast (0V→~0.9V by ~596ns, boosted 5×), slightly overshoots (to ~0.975V by 695ns) as the divider's first edges arrive and the boost cuts out, then settles into normal fine-lock dynamics from ~900ns onward — consistent with the fine-lock time of the 0.85 V run. (An earlier version cited the "~450 ns" loop-model prediction here; that figure is withdrawn, see `docs/loop_model.md`.) Note the overshoot/ringing is expected: the loop is underdamped (ζ ≈ 0.33 corrected). The independent averaged model (`scripts/loop_check.py`) shows that *without* the 5× boost, starting from 0 V, the loop does not settle (the charge pump saturates and V_ctrl overshoots to 1.79 V), consistent with the cold-start problem this fix addresses.
 
 ## Status
 

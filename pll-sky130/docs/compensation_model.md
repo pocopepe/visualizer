@@ -14,10 +14,12 @@ Review 1's fit (tt corner, Vctrl=0.9V): `f(T) = 221.7 + 0.1919*T - 0.00087*T^2` 
     b1 = a1 + 54*a2 = 0.1919 + 54*(-0.00087) = 0.14492 MHz/C
     b2 = a2 = -0.00087 MHz/C^2
 
-To cancel drift via K_VCO ≈ 670 MHz/V (Review 1 fit @ 0.9V): ΔVctrl(T) = -Δf(T)/K_VCO, giving full-strength coefficients:
+To cancel drift via K_VCO: ΔVctrl(T) = -Δf(T)/K_VCO. The derivation as originally done used K_VCO = 669 MHz/V (Review 1 quadratic fit), giving:
 
     k1_full = -b1/K_VCO = -2.163e-4  V/C
     k2_full = +1.299e-6  V/C^2
+
+> **Erratum (2026-10-11).** 669 MHz/V was the wrong K_VCO for this purpose. The local derivative at 0.9 V (tt, 27 °C, fine sweep, `results/vco/kvco_fine/`) is **887 MHz/V**; with it the analytic coefficients would be ≈ -1.63e-4 V/C and ≈ +0.98e-6 V/C^2 (scaled by 669/887). So the analytic coefficients were ~1.3× too large. This is a **second reason**, besides the constant-K_VCO assumption (K_VCO changes along the V_ctrl excursion), why the analytic 2nd-order network over-corrected (`results/comp/FINDINGS.md`). The coefficients actually used in the simulations are the empirically refit ones (fit directly to simulated residuals), as are the spans, held-out checks and Monte Carlo statistics; none of those depend on the 669 figure and they are unchanged.
 
 ## Compensation-strength sweep (for the H1 regression, paired with cross-flow ε once Virtuoso access lands)
 

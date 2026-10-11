@@ -2,6 +2,8 @@
 
 Run `./scripts/demo_review1.sh` to regenerate every number below from scratch (headless, no GUI, ~8-12 min; `--fast` reuses the cached VCO sweep and finishes in ~3 min). Full narrative writeups: `results/vco/FINDINGS.md`, `results/loop/FINDINGS.md`, `docs/loop_model.md`, `PROJECT_CHARTER.md`.
 
+> **Errata (2026-10-11).** Several derived (not simulated) numbers in this file were corrected after independent checks: the Review-1 loop-filter prediction (fn/ζ/PM, the "450 ns analytical" figure), K_VCO (~890, not ~670 MHz/V), the "oscillation floor 0.63 V" (no hard floor), and the sf/fs corner labels and tempco mechanism. Corrected inline below; details in `STATUS.md` (Errata) and `docs/loop_model.md`. All simulation-derived results (tuning curve, tempcos, spans, MC statistics, lock times 577/839 ns) are unchanged.
+
 ## The hypothesis
 
 **H1 (falsifiable):** Temperature compensation is a *cancellation* problem — a correction network is sized so its temperature coefficient nearly cancels the VCO's own, leaving a residual one to two orders of magnitude smaller than either term. In a cancellation problem, simulator/model disagreement doesn't pass through proportionally, it's amplified by roughly the compensation ratio:
@@ -24,7 +26,7 @@ Consequence if it holds: an open-source flow can't be trusted to design a correc
 | Original claim | Why it's wrong | What replaced it |
 |---|---|---|
 | **±0.15 ppm frequency stability** | In a reference-locked PLL, f_out = N·f_ref *exactly* in lock. Temperature can't move it while locked — that stability number describes the reference crystal, not anything the PLL design contributes. | Residual **VCO free-running drift < ±0.3% (≈±24 ppm/°C)**, benchmarked against Souliotis 2022's fabricated −1.5%/+0.4%. |
-| **V_ctrl lock range [0.27V, 1.53V]** (0.15·VDD floor) | Measured: this ring-VCO topology doesn't sustain oscillation below ≈0.6–0.65V — it's device-threshold-limited (the NMOS current source's gate is driven directly by V_ctrl), not a sizing bug. | Floor revised to **[0.63V, 1.53V]** (0.35·VDD), matching what the topology actually delivers with margin. |
+| **V_ctrl lock range [0.27V, 1.53V]** (0.15·VDD floor) | Measured: this ring-VCO topology is device-threshold-limited (the NMOS current source's gate is driven directly by V_ctrl): below ≈0.65V it is under 18 MHz (<8% of the 226 MHz target). *There is no hard oscillation floor (corrected 2026-10-11; the original "doesn't sustain oscillation" was a short-window artifact).* Not a sizing bug. | Floor revised to **[0.63V, 1.53V]** (0.35·VDD) as the practical lock range, matching what the topology actually delivers with margin. |
 | *(implicit)* single scalar compensation ratio C | Measured tempco varies **>3× across corners** (332/681/1070 ppm/°C at ff/tt/ss) | **C locked as per-corner, C(corner)**, not scalar — carried into Review 2 compensation design. |
 
 ## All the numbers
@@ -42,10 +44,10 @@ Consequence if it holds: an open-source flow can't be trusted to design a correc
 | 1.25 V | 346.0 MHz |
 | 1.40 V | 358.1 MHz |
 
-- **K_VCO ≈ 670 MHz/V** (fit derivative at 0.9V — curve is measurably nonlinear, don't quote a bare secant)
+- **K_VCO ≈ 890 MHz/V** (887; local central-difference derivative at 0.9V, tt, 27°C — the curve is strongly nonlinear/S-shaped, don't quote a bare secant). *Corrected 2026-10-11 from ~670, a quadratic fit over the whole 0.65-1.4 V curve.* Per corner at 0.9V: sf 580, ff 940, tt 890, ss 820, fs 1020 MHz/V.
 - **Uncompensated tempco:** ff **+332 ppm/°C**, tt **+681 ppm/°C**, ss **+1070 ppm/°C** (>3× spread)
 - Per-interval tempco (tt, not a single number): +1123 → +924 → +722 → +537 → +352 ppm/°C, cold to hot
-- **Minimum sustaining V_ctrl: ≈0.6–0.65V**
+- **No hard oscillation floor** (corrected 2026-10-11): 0.50 V: 0.63 MHz, 0.55 V: 2.1, 0.60 V: 6.5, 0.65 V: 18.0, 0.70 V: 41.3 MHz (f falls ~2.5-3× per -50 mV, subthreshold). Practical floor ≈0.65V.
 
 ### PFD (edge-detector + NOR SR-latch)
 - Functionally verified across a swept REF(20MHz)/DIV(18MHz) phase relationship
@@ -58,12 +60,12 @@ Consequence if it holds: an open-source flow can't be trusted to design a correc
 
 | Quantity | Measured | Target / Prediction |
 |---|---|---|
-| **Lock time** | **577 ns** | <2 µs (spec); 450 ns (analytical) |
+| **Lock time** | **577 ns** | <2 µs (spec); 573 ns (independent averaged behavioural model, `scripts/loop_check.py`) |
 | Settled V_ctrl | 0.902 V | 0.9 V design point |
 | Settled divider frequency | 28.515 MHz | 28.275 MHz (0.85% high) |
 | Settled VCO frequency | 227.96 MHz | 226.2 MHz (0.78% high) |
 
-Loop filter: R2=1.7kΩ, C1=68pF, C2=6.8pF, Icp=20µA → predicted fn≈1.98MHz, ζ≈0.72, BW≈2.85MHz, PM≈70-72°.
+Loop filter: R2=1.7kΩ, C1=68pF, C2=6.8pF, Icp=20µA → **corrected 2026-10-11:** fn≈0.9MHz, ζ≈0.33, BW≈0.6MHz, PM≈30-33° (K_VCO = 887 MHz/V). Review 1 reported fn≈1.98MHz, ζ≈0.72, BW≈2.85MHz, PM≈70-72° and a "450 ns" prediction; those came from dropping the 1/(2π) PFD/CP gain and are withdrawn. The loop is underdamped (V_ctrl overshoots to ~0.92V from a 0.85V start) but still meets the <2 µs spec in simulation. Retuning R2 (≈3.6 kΩ for ζ≈0.7, not simulated) is a Review 3 item. See `docs/loop_model.md`.
 
 ## Two real bugs found and fixed (not cosmetic — both changed the result)
 
@@ -75,7 +77,7 @@ Loop filter: R2=1.7kΩ, C1=68pF, C2=6.8pF, Icp=20µA → predicted fn≈1.98MHz,
 - Charge pump is an idealized behavioral model (no transistor switches, no mismatch) — deliberate, deferred to Review 2 where mismatch modeling is actually needed.
 - Closed-loop lock is a single point (tt, 27°C) — full PVT sweep is Review 2.
 - No phase noise / PSS analysis — not available in open-source tools (confirmed independently by Thiriloganathan et al. 2026); Review 2 uses a transient/jitter estimate, Review 3 gets the real number from Spectre RF.
-- Cold start from 0V drives a multi-microsecond acquisition dead zone (undocumented fix, flagged for Review 2) — the accepted lock result starts from a coarse-tuned V_ctrl=0.85V.
+- Cold start from 0V drives a multi-microsecond acquisition dead zone (VCO is sub-18 MHz below ~0.65V, so the divided clock is effectively absent; fixed in Review 2) — the accepted lock result starts from a coarse-tuned V_ctrl=0.85V.
 
 ---
 
@@ -94,7 +96,7 @@ Novelty-checked before committing to this (see `PROJECT_CHARTER.md` §3.4): a 20
 | 2nd-order, naive analytically-derived k2 | 4.49% | **worse than 1st-order** |
 | 2nd-order, empirically refined | **1.11%** | 7.67× better than baseline, 2.7× better than 1st-order |
 
-**The naive-2nd-order-is-worse result is itself real, reportable content**, not noise: the small-signal derivation of the quadratic coefficient assumes constant K_VCO, which breaks down because K_VCO is itself measurably nonlinear (see the VCO tuning curve above). Refitting the coefficients against the *measured* post-1st-order residual (zero extra simulation — reused existing data) fixed it. Full writeup: `results/comp/FINDINGS.md`.
+**The naive-2nd-order-is-worse result is itself real, reportable content**, not noise: the small-signal derivation of the quadratic coefficient assumes constant K_VCO, which breaks down because K_VCO is itself measurably nonlinear (see the VCO tuning curve above); additionally the analytic coefficient used K_VCO = 669 MHz/V where the local value at 0.9V is 887, over-estimating the needed correction ~1.3× (second reason it over-corrected). Refitting the coefficients against the *measured* post-1st-order residual (zero extra simulation — reused existing data) fixed it. Full writeup: `results/comp/FINDINGS.md`.
 
 ## Full 5-corner grid — corrects Review 1's spot-check
 
@@ -139,7 +141,7 @@ Every checklist item resolved: delivered, or explicitly deferred to Review 3 wit
 - **2nd-order beats 1st-order under mismatch** — significant at n=30 on |drift| (see above).
 - **Cold-start acquisition — fixed and verified.** A 5×-boosted-current charge pump variant closes the multi-microsecond dead-zone risk flagged since Review 1. Simulated from a TRUE 0V cold start (not the coarse-tuned 0.85V assumption): **locks in 839ns**, inside the 2µs spec, on the first attempt. `results/loop/FINDINGS_COLDSTART.md`.
 - **Compensation-strength sweep** — 6 (α, C) points ready to pair with Spectre ε data for the H1 test. The α-vs-C fit is near-circular and isn't evidence of anything by itself. `results/comp/FINDINGS_H1_PIPELINE.md`.
-- **Sensitivity insight** from existing corner data (no new sims): N/P-mismatched corners (sf, fs) — not absolute device speed — bracket the entire tempco range, pointing at current-source balance as the mechanism. `docs/sensitivity_analysis.md`.
+- **Sensitivity insight** from existing corner data: the skew corners (sf = fast-NMOS/slow-PMOS, fs = slow-NMOS/fast-PMOS) bracket the entire tempco range. *Mechanism corrected 2026-10-11 (earlier text said "N/P current-source balance", which was wrong):* tempco ranks with NMOS drive at 0.9V (sf 112 < ff 332 < tt 681 < ss 1070 < fs 1399 ppm/°C, NMOS Id 45.1/42.8/36.2/30.3/28.2 µA), since V_ctrl sets the NMOS starving current directly and lower overdrive makes the Vth drop with T dominate; sf/fs bracket the range because sky130's skew corners shift NMOS Vth ±27 mV vs ±15 mV for ss/ff. Interpretation supported by ordering and a sign flip (tt at 1.4V: -816 ppm/°C), not an isolation experiment. `results/vco/FINDINGS_GRID5CORNER.md`.
 - **Benchmark table** against 3 references whose numbers were checked against publisher records; all 15 deck references re-verified by DOI (corrected several author/venue errors, e.g. the ring-VCO baseline paper is Souliotis et al., AEU). `docs/benchmark_table.md`.
 
 ## Deferred to Review 3, with reasons (not silently dropped)

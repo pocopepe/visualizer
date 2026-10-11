@@ -1,8 +1,12 @@
 * Passive lead-lag loop filter (type-II, 2nd order dominant + 3rd-order
 * ripple pole). Values from the analytical loop model in
 * docs/loop_model.md: R2=1.7k, C1=68p, C2=6.8p (C2=C1/10, standard
-* ripple-pole placement), targeting fn~2MHz, zeta~0.72 at Icp=20uA,
-* Kvco~670MHz/V (fit @ Vctrl=0.9V), N=8.
+* ripple-pole placement). Originally documented as targeting fn~2MHz,
+* zeta~0.72; that was an arithmetic error (missing 1/(2*pi) in omega_n^2).
+* Corrected 2026-10-11: at Icp=20uA, N=8, local Kvco~887MHz/V (Vctrl=0.9V,
+* tt, 27C) these values give fn~0.9MHz, zeta~0.33, PM~30-33deg
+* (underdamped). Component values unchanged. zeta~0.7 would need
+* R2~3.6k (not simulated; Review 3 item). See docs/loop_model.md.
 .subckt LOOP_FILTER vctrl vss
 + r2=1.7k c1=68p c2=6.8p
 Rlf  vctrl nlf  {r2}

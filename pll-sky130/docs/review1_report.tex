@@ -90,7 +90,10 @@ This report documents Review~1 of a project originally scoped as a Cadence Virtu
   \item \textbf{Scope}: the original brief was schematic-and-simulation only, with no layout. This plan adds a full schematic-to-GDS flow, and reframes the project's contribution around a genuine, literature-verified research question rather than a reproduction of known circuit topologies.
 \end{itemize}
 
-Review~1 targeted 50\% completion: a working closed-loop PLL, transistor-level for every block except a deliberately idealized charge pump, simulated and characterized against a derived analytical model. \textbf{That target was met.} The loop locks in 577\,ns against a 2\,\textmu s specification, agreeing with the analytical prediction (450\,ns) to within the same order of magnitude. Two real simulation-setup bugs were found and fixed along the way (Section~\ref{sec:closedloop}), and two specification inconsistencies inherited from the original brief were caught, diagnosed, and resolved (Section~\ref{sec:decisions}).
+Review~1 targeted 50\% completion: a working closed-loop PLL, transistor-level for every block except a deliberately idealized charge pump, simulated and characterized against a derived analytical model. \textbf{That target was met.} The loop locks in 577\,ns against a 2\,\textmu s specification, matching an independent averaged behavioural model (573\,ns). Two real simulation-setup bugs were found and fixed along the way (Section~\ref{sec:closedloop}), and two specification inconsistencies inherited from the original brief were caught, diagnosed, and resolved (Section~\ref{sec:decisions}).
+
+\medskip
+\noindent\textbf{Erratum (2026-10-11).} As first issued, this report stated that the loop filter gave $f_n \approx 1.98$\,MHz, $\zeta \approx 0.72$, phase margin $70$--$72^\circ$ and a ``450\,ns'' predicted lock time, that $K_{VCO}\approx 670$\,MHz/V, and that the VCO ``does not sustain oscillation'' below $\approx 0.6$--$0.65$\,V. All three were wrong and are corrected in place below: the loop-filter formula omitted a factor $1/2\pi$ (correct: $f_n \approx 0.9$\,MHz, $\zeta \approx 0.33$, PM $\approx 30$--$33^\circ$, i.e.\ underdamped); the local $K_{VCO}$ at 0.9\,V is $\approx 890$\,MHz/V; and the VCO oscillates (slowly) well below 0.65\,V, so there is no hard floor. The simulated results (577\,ns lock, tuning curve, tempcos) are unchanged. See \texttt{docs/loop\_model.md} and \texttt{STATUS.md}.
 
 \begin{finding}
 The project's central research contribution is not the PLL circuit itself (a temperature-compensated ring-oscillator PLL is known, published silicon) but a quantified study of whether open-source EDA model fidelity survives \emph{cancellation-based} designs --- where a correction network subtracts two large temperature-dependent quantities to leave a small residual, amplifying simulator/model disagreement by roughly the compensation ratio. This is detailed in Section~\ref{sec:novelty}.
@@ -190,15 +193,15 @@ All five were fixed (staggered initial conditions, post-skip-only amplitude extr
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lll}
+\begin{tabular}{p{5.6cm}p{3.6cm}p{5.4cm}}
 \toprule
 \textbf{Quantity} & \textbf{Value} & \textbf{Caveat} \\
 \midrule
-$K_{VCO}$ (fit derivative @ 0.9\,V, tt, 27$^\circ$C) & $\approx$670\,MHz/V & Curve is measurably nonlinear \\
+$K_{VCO}$ (local derivative @ 0.9\,V, tt, 27$^\circ$C) & $\approx$890\,MHz/V (887) & Strongly nonlinear curve; corrected from 670 (Erratum) \\
 Uncompensated tempco, tt (secant, $-40\to85^\circ$C) & $+681$\,ppm/$^\circ$C & Local slope varies $3.4\times$ across range \\
 Uncompensated tempco, ss corner & $+1070$\,ppm/$^\circ$C & \\
 Uncompensated tempco, ff corner & $+332$\,ppm/$^\circ$C & \textbf{$>3\times$ spread across corners} \\
-Min.\ $V_{\text{ctrl}}$ for sustained oscillation & $\approx 0.6$--$0.65$\,V & Device-threshold-limited \\
+Low-$V_{\text{ctrl}}$ behaviour & no hard floor (18\,MHz @ 0.65\,V) & Device-threshold-limited (Erratum) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -208,7 +211,7 @@ The uncompensated temperature coefficient varies by more than $3\times$ across p
 \end{finding}
 
 \begin{risk}
-The VCO does not sustain oscillation down to the originally specified $V_{\text{ctrl}}$ floor (0.27\,V, i.e.\ $0.15\cdot V_{DD}$). Measured minimum sustaining control voltage is $\approx$0.6--0.65\,V, and this is the \emph{best-behaved} corner/temperature --- cold temperature and the ss corner can only push this boundary higher. This is a genuine contradiction between a locked specification and measured data, resolved in Section~\ref{sec:decisions}.
+The VCO does not sustain oscillation down to the originally specified $V_{\text{ctrl}}$ floor (0.27\,V, i.e.\ $0.15\cdot V_{DD}$). The ring does not stop oscillating at a sharp threshold (corrected 2026-10-11; the first issue of this report read a short-simulation-window artifact as oscillation being lost): $f$ falls from 18\,MHz at 0.65\,V to 6.5, 2.1 and 0.6\,MHz at 0.60, 0.55 and 0.50\,V, against a 226\,MHz target, so $\approx 0.65$\,V is the practical floor. This is for the \emph{best-behaved} corner/temperature --- cold temperature and the ss corner can only push the practical boundary higher. This is a genuine contradiction between a locked specification and measured data, resolved in Section~\ref{sec:decisions}.
 \end{risk}
 
 % ------------------------------------------------------------------
@@ -230,28 +233,31 @@ A $\div 8$ chain of three toggle flip-flops. Built from a transmission-gate D-la
 \section{Analytical Loop Model}
 \label{sec:loopmodel}
 
-Using the measured $K_{VCO} \approx 670$\,MHz/V, a nominal VCO operating point of 226.2\,MHz at $V_{\text{ctrl}}=0.9$\,V, a divider ratio $N=8$ (giving $f_{\text{ref}} = 28.275$\,MHz), and a charge pump current $I_{cp} = 20\,\mu$A, standard second-order type-II charge-pump-PLL design equations were solved for a target natural frequency $f_n \approx 2$\,MHz and damping $\zeta \approx 0.71$:
+Using the measured $K_{VCO}$ (670\,MHz/V as first reported; corrected local value at 0.9\,V is $\approx 890$\,MHz/V), a nominal VCO operating point of 226.2\,MHz at $V_{\text{ctrl}}=0.9$\,V, a divider ratio $N=8$ (giving $f_{\text{ref}} = 28.275$\,MHz), and a charge pump current $I_{cp} = 20\,\mu$A, standard second-order type-II charge-pump-PLL design equations were solved for a target natural frequency $f_n \approx 2$\,MHz and damping $\zeta \approx 0.71$:
 
 \begin{align*}
-\omega_n^2 &= \frac{I_{cp} \cdot K_{VCO}}{N \cdot C_1} & \zeta &= \frac{R_2}{2}\sqrt{\frac{I_{cp} \cdot K_{VCO} \cdot C_1}{N}}
+\omega_n^2 &= \frac{I_{cp} \cdot K_{VCO}}{2\pi \cdot N \cdot C_1} & \zeta &= \frac{R_2 C_1 \omega_n}{2}
 \end{align*}
 
-giving $C_1 = 68$\,pF, $R_2 = 1.7$\,k$\Omega$, and $C_2 = C_1/10 = 6.8$\,pF (standard ripple-pole placement). Recomputing with these rounded values: $f_n \approx 1.98$\,MHz, $\zeta \approx 0.72$, loop bandwidth $\approx 2.85$\,MHz, phase margin $\approx 70$--$72^\circ$, and a predicted lock time of $\approx 450$\,ns (via the settling time constant $\tau = 1/(\zeta\omega_n) \approx 112$\,ns, $\approx 4\tau$ to settle).
+($K_{VCO}$ in rad/s/V; the $1/2\pi$ is the phase-detector/charge-pump gain $I_{cp}/2\pi$ per radian.) The values chosen were $C_1 = 68$\,pF, $R_2 = 1.7$\,k$\Omega$, and $C_2 = C_1/10 = 6.8$\,pF (standard ripple-pole placement).
+
+\medskip
+\noindent\textbf{Erratum (2026-10-11).} The design was originally computed without the $1/2\pi$ in $\omega_n^2$, which inflated $\omega_n$ by $\sqrt{2\pi}$ and gave $f_n \approx 1.98$\,MHz, $\zeta \approx 0.72$, loop bandwidth $\approx 2.85$\,MHz, phase margin $70$--$72^\circ$ and a ``450\,ns'' lock prediction. Recomputed correctly for these rounded values at the measured $K_{VCO} = 887$\,MHz/V: $f_n \approx 0.91$\,MHz, $\zeta \approx 0.33$, loop bandwidth $\approx 0.6$\,MHz, phase margin $\approx 30$--$33^\circ$ (100$\zeta$ rule; $C_2$ erodes it slightly more). The loop as built is underdamped, which the simulated overshoot (to $\approx 0.92$\,V from a 0.85\,V start) confirms; it still meets the $<2\,\mu$s specification. The ``450\,ns'' figure is withdrawn: it agreed with the measured lock time only by coincidence. A retune of $R_2$ (about $3.6$\,k$\Omega$ for $\zeta \approx 0.7$, not simulated) is a Review~3 item.
 
 % ------------------------------------------------------------------
 \section{Closed-Loop Lock Demonstration}
 \label{sec:closedloop}
 
-The full loop (REF $\to$ PFD $\to$ Charge Pump $\to$ Loop Filter $\to$ VCO $\to \div8 \to$ back to PFD) was assembled and simulated at the tt corner, $27^\circ$C, starting from $V_{\text{ctrl}} = 0.85$\,V (a ``coarse-tuned start,'' inside the VCO's confirmed-oscillating range --- see the risk discussion below).
+The full loop (REF $\to$ PFD $\to$ Charge Pump $\to$ Loop Filter $\to$ VCO $\to \div8 \to$ back to PFD) was assembled and simulated at the tt corner, $27^\circ$C, starting from $V_{\text{ctrl}} = 0.85$\,V (a ``coarse-tuned start,'' well inside the VCO's usable range --- see the risk discussion below).
 
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lll}
+\begin{tabular}{p{6cm}p{2.6cm}p{5.8cm}}
 \toprule
 \textbf{Quantity} & \textbf{Measured} & \textbf{Target / Prediction} \\
 \midrule
-Lock time (settles within $\pm2\%$ of final value) & \textbf{577\,ns} & $<2\,\mu$s (spec); 450\,ns (analytical) \\
+Lock time (settles within $\pm2\%$ of final value) & \textbf{577\,ns} & $<2\,\mu$s (spec); 573\,ns (independent averaged model) \\
 Settled $V_{\text{ctrl}}$ & 0.902\,V & 0.9\,V design point \\
 Settled divider output frequency & 28.515\,MHz & 28.275\,MHz (0.85\% high) \\
 Settled VCO output frequency & 227.96\,MHz & 226.2\,MHz (0.78\% high) \\
@@ -259,7 +265,7 @@ Settled VCO output frequency & 227.96\,MHz & 226.2\,MHz (0.78\% high) \\
 \end{tabular}
 \end{table}
 
-The small residual frequency offset ($\approx$0.8\%) is consistent with normal charge-pump/PFD limit-cycle ripple in a real type-II CP-PLL. The gap between the measured 577\,ns and the analytical 450\,ns prediction is expected: the analytical model is a continuous-time linearization that does not capture the PFD's reset delay or the charge pump's discrete pumping action.
+The small residual frequency offset ($\approx$0.8\%) is consistent with normal charge-pump/PFD limit-cycle ripple in a real type-II CP-PLL. The measured 577\,ns agrees to under 1\% with an independent averaged (phase-domain) behavioural model of the same loop run on the measured tuning curve (573\,ns, \texttt{scripts/loop\_check.py}). (Erratum, 2026-10-11: the first issue of this report explained a 577 vs.\ 450\,ns gap by PFD reset delay and discrete pumping; the 450\,ns figure was wrong and that explanation is withdrawn.)
 
 \subsection{Two real bugs found and fixed}
 
@@ -280,7 +286,7 @@ The accepted lock result assumes the loop starts already inside the VCO's confir
 \end{decision}
 
 \begin{decision}
-\textbf{$V_{\text{ctrl}}$ lock-range floor} revised from $[0.15\cdot V_{DD}, 0.85\cdot V_{DD}] = [0.27\text{V}, 1.53\text{V}]$ to $[0.35\cdot V_{DD}, 0.85\cdot V_{DD}] \approx [0.63\text{V}, 1.53\text{V}]$. The original floor is device-threshold-limited for this topology (the NMOS current source's gate is driven directly by $V_{\text{ctrl}}$), not a sizing oversight; reaching lower would need a fundamentally different level-shifted control scheme, not justified by the specs in play.
+\textbf{$V_{\text{ctrl}}$ lock-range floor} revised from $[0.15\cdot V_{DD}, 0.85\cdot V_{DD}] = [0.27\text{V}, 1.53\text{V}]$ to $[0.35\cdot V_{DD}, 0.85\cdot V_{DD}] \approx [0.63\text{V}, 1.53\text{V}]$. The original floor is unusable for this topology because it is device-threshold-limited (the NMOS current source's gate is driven directly by $V_{\text{ctrl}}$; the VCO is under 18\,MHz below $\approx 0.65$\,V --- not a hard oscillation cutoff, see the Erratum in the Executive Summary), not a sizing oversight; reaching lower would need a fundamentally different level-shifted control scheme, not justified by the specs in play.
 \end{decision}
 
 \begin{decision}

@@ -2,6 +2,8 @@
 
 **Status:** First real simulated results, post-critique revision 2. sky130B, tt/ss/ff corners, ngspice-42.
 **Circuit:** 5-stage current-starved ring oscillator, `blocks/vco/vco_ring.spice`.
+**Erratum (2026-10-11):** three items in this Review-1 document were corrected after independent re-checks (evidence: `results/vco/kvco_fine/`, `results/vco/floor_check/`, `scripts/loop_check.py`). (1) The K_VCO at 0.9 V is ~890 MHz/V, not ~670 (the 670 was a quadratic fit over the whole S-shaped curve). (2) There is **no hard oscillation floor at 0.60-0.65 V**; the earlier runs just had too short a window. (3) The "N/P-mismatched corners" tempco explanation (in later documents) was wrong; see `FINDINGS_GRID5CORNER.md`. Simulation results (f vs V_ctrl, tempcos, spans) are unchanged. Original text below is kept, with in-line corrections marked.
+
 **Reproduce:** `source env/pdk.env && ./scripts/run_sweep.sh <outdir> <jobs> <points...>` then `python3 scripts/compile_vco_results.py <outdir> <csv>`.
 
 This is not a clean-room result — it went through one adversarial-review pass (a subagent tasked to critique it as a skeptical reviewer/thesis committee member would) before these numbers were trusted. That review caught real bugs, not just style issues; see "What the critique pass changed" below. Treat that as the standard for every subsequent block, not a one-off.
@@ -12,11 +14,11 @@ This is not a clean-room result — it went through one adversarial-review pass 
 
 | Quantity | Value | Caveat |
 |---|---|---|
-| K_VCO (fit derivative @ 0.9V, tt, 27°C) | ~670 MHz/V | Curve is measurably nonlinear (quadratic fit); a two-point secant elsewhere on the curve gives a visibly different number. Always state the bias point. |
+| K_VCO (local derivative @ 0.9V, tt, 27°C; central difference ±50 mV) | **~890 MHz/V (887)** | **Corrected 2026-10-11** (was ~670, a quadratic fit over the whole S-shaped 0.65-1.4 V curve). Curve is strongly nonlinear; always state the bias point. Tuning range 18 → 358 MHz over 0.65 → 1.40 V is unchanged. |
 | Uncompensated tempco, tt corner (endpoint secant, -40→85°C) | +681 ppm/°C | **Not constant** — per-interval local slope ranges from +1123 ppm/°C (cold end) to +352 ppm/°C (hot end), a >3× spread. See table below. |
 | Uncompensated tempco, **ss** corner | +1070 ppm/°C | |
 | Uncompensated tempco, **ff** corner | +332 ppm/°C | |
-| Minimum Vctrl for sustained oscillation (tt, 27°C) | between 0.60 V and 0.65 V | 0.65V confirmed oscillating (17.975 MHz); 0.50/0.55/0.60V did not complete within a 240s/3µs simulation budget — consistent with approaching a bifurcation where settling time diverges, not just "needs more time." |
+| Low-V_ctrl behavior (tt, 27°C) | **No hard floor** (corrected 2026-10-11) | The original 0.50/0.55/0.60 V runs did not complete in a 240 s / 3 µs budget and were misread as "oscillation lost" (a bifurcation); that was a short-simulation-window artifact. With long windows (`results/vco/floor_check/`): 0.50 V: 0.63 MHz; 0.55 V: 2.09; 0.60 V: 6.47; 0.65 V: 18.0; 0.70 V: 41.3 MHz. The ring keeps oscillating (subthreshold); f falls ~2.5-3× per -50 mV. Practically: below ~0.65 V the VCO is under 18 MHz (<8% of the 226 MHz target) and at 0.5 V sub-MHz, so from a 0 V start the divided clock is effectively absent. |
 
 ## The finding that actually matters most right now
 
@@ -24,7 +26,7 @@ This is not a clean-room result — it went through one adversarial-review pass 
 
 ## A second finding worth flagging to Dr. Bindu directly
 
-**The VCO does not sustain oscillation down to the charter's mandated V_ctrl floor of 0.27V** (charter §4: lock range requires V_ctrl ∈ [0.15·VDD, 0.85·VDD] = [0.27V, 1.53V]). At tt/27°C, oscillation was confirmed at 0.65V and lost somewhere between 0.60V and 0.65V — and this is the *best-behaved* corner/temperature; ss + cold temperature will starve the bias current further and can only push this boundary higher, not lower. Two ways to close this gap, to be resolved before charge-pump/loop-filter sizing at Review 2:
+**The VCO is not usable down to the charter's mandated V_ctrl floor of 0.27V** (charter §4: lock range requires V_ctrl ∈ [0.15·VDD, 0.85·VDD] = [0.27V, 1.53V]). *Corrected 2026-10-11:* the original text said oscillation "was lost between 0.60V and 0.65V"; that was wrong (short-window artifact, see table). There is no hard floor, but frequency collapses subthreshold: 18 MHz at 0.65 V, 6.5 MHz at 0.60 V, sub-MHz at 0.50 V, versus the 226 MHz lock target. A practical floor of ~0.65 V (device-threshold-limited: the NMOS starving device's gate is driven directly by V_ctrl) still holds for a usable lock range, and the revised spec stands on that ground. This is at tt/27°C; ss and cold temperature will starve the bias current further and push the practical boundary higher (not re-measured). Two ways to close this gap, to be resolved before charge-pump/loop-filter sizing at Review 2:
 1. Resize the bias generator (`wcs`/`lcs` in `vco_ring.spice`) so meaningful current still flows at low Vctrl — likely needs a lower threshold-adjacent design or a level-shifted control path.
 2. Or, revise the charter's V_ctrl floor to match what this topology can actually deliver, and re-derive the lock-range implications.
 Either is fine; leaving it unresolved is not — it's a contradiction between a locked spec and a measured result, sitting in our own data.

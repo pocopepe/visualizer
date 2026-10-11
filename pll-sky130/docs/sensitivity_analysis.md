@@ -2,24 +2,31 @@
 
 Corner-level analysis using the already-collected 5-corner grid (`results/vco/grid5corner.csv`), not a new per-device-parameter Monte Carlo campaign — a full tornado chart (isolating each individual BSIM parameter's contribution) would need a dedicated one-parameter-at-a-time sweep, deferred to Review 3 if a finer breakdown is needed. This is the data-driven insight available without new simulation.
 
+> **Erratum (2026-10-11).** The first version of this note had the sf/fs labels backwards and attributed the
+> spread to N/P current-source balance. Both are corrected below; the measured tempco numbers are unchanged.
+
 ## The corners, decoded
 
-sky130's 5 standard corners aren't a full N×P factorial — they're the specific combinations foundries use for signoff: tt (typical/typical), ff (fast/fast), ss (slow/slow), sf (slow-N/fast-P), fs (fast-N/slow-P).
+In this PDK (sky130B, volare c6d73a35) the `sf` corner lowers NMOS Vth by 27 mV (mobility +5 %) and raises |Vth| of the PMOS by 37 mV (mobility -10 %): **sf = fast-NMOS / slow-PMOS**. `fs` is the reverse: **slow-NMOS / fast-PMOS**. The ss/ff corners move NMOS Vth by only +/-15 mV, so the skew corners are *more extreme on the NMOS* than ss/ff.
 
-| Corner | NMOS | PMOS | Uncompensated tempco |
-|---|---|---|---|
-| sf | slow | fast | +112 ppm/°C |
-| ff | fast | fast | +332 ppm/°C |
-| tt | typical | typical | +681 ppm/°C |
-| ss | slow | slow | +1070 ppm/°C |
-| fs | fast | slow | +1399 ppm/°C |
+NMOS drive current of a single device (W/L = 2/0.5, |Vgs| = 0.9 V, 27 C), against the uncompensated tempco from the grid:
+
+| Corner | NMOS | PMOS | NMOS Id (uA) | Tempco |
+|---|---|---|---|---|
+| sf | fast | slow | 45.1 | +112 ppm/C |
+| ff | fast | fast | 42.8 | +332 ppm/C |
+| tt | typical | typical | 36.2 | +681 ppm/C |
+| ss | slow | slow | 30.3 | +1070 ppm/C |
+| fs | slow | fast | 28.2 | +1399 ppm/C |
 
 ## The finding
 
-**The two "mismatched" corners (sf, fs) bracket the *entire* range — both the flattest (sf) and the steepest (fs) tempco.** The two "matched-speed" corners (ff, ss) sit inside that range, not at the extremes. If tempco were driven mainly by *absolute* device speed (how fast the corner is, independent of which device type), the matched corners would be the extremes and the mismatched ones would land in between — the opposite of what's measured.
+**Tempco ranks exactly with NMOS drive at the 0.9 V bias point.** V_ctrl drives the NMOS starving gate directly and sets the PMOS bias through the Mnb -> Mpb mirror, so NMOS overdrive sets the ring current. With less overdrive, the threshold-voltage drop with temperature is a larger fraction of the overdrive and outweighs the mobility drop, so frequency rises with temperature more steeply. sf and fs bracket the whole range only because sky130's skew corners shift NMOS Vth further than ss/ff do.
 
-This points to the tempco being driven substantially by the **relative balance between the ring's PMOS current-source path and NMOS current-source path** (`Mp_cs` vs `Mn_cs` in `vco_ring.spice`), not by either device's absolute speed alone. When N and P are mismatched (sf, fs), that balance shifts hardest with temperature — in one direction it happens to partially self-cancel (sf, flattest), in the other it compounds (fs, steepest). This is consistent with — and gives a circuit-level explanation for — why a temperature-compensation network tuned only for the typical (tt) balance point misses badly at the mismatched corners: it's correcting a symptom (the tt-specific drift curve) rather than the underlying cause (N/P balance sensitivity), which is exactly why per-corner refitting was necessary rather than optional polish (`results/comp/percorner_*` results).
+Supporting check (`results/vco/floor_check/`): at V_ctrl = 1.4 V (tt) the tempco is **-816 ppm/C** (f = 380.2 / 358.1 / 343.7 MHz at -40 / 27 / 85 C), so the sign flips between 0.9 V and 1.4 V -- a zero-tempco bias point exists, which is the textbook behaviour behind this ordering.
+
+This explains why a compensation network tuned for the tt bias point misses at the other corners and why per-corner refitting was necessary (`results/comp/percorner_*`).
 
 ## What this does NOT establish
-- Which specific BSIM parameter (Vt mismatch, mobility tempco, etc.) is the root cause of the N/P balance sensitivity — that needs a per-parameter sweep, not corner-level data.
-- Whether a redesigned bias generator (e.g., a current mirror less sensitive to N/P mismatch) would reduce the underlying sensitivity rather than just compensating around it — a real Review 3 candidate if pursued.
+- Which specific BSIM parameter (Vth tempco vs mobility tempco) dominates quantitatively -- the NMOS-overdrive ordering and the sign flip support the explanation but it was not isolated with a one-parameter-at-a-time sweep.
+- Whether a redesigned bias generator (e.g., biasing nearer the zero-tempco point) would reduce the underlying sensitivity rather than just compensating around it — a real Review 3 candidate if pursued.

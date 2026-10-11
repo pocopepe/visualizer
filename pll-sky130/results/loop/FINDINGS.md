@@ -2,14 +2,16 @@
 
 **Result: the loop locks.** Nominal corner (tt, 27°C), design point from `docs/loop_model.md`.
 
+> **Erratum (2026-10-11).** This file originally compared 577 ns to a "~450 ns analytical model" prediction and explained the gap by PFD reset delay and discrete pumping. That prediction came from an arithmetic error in `docs/loop_model.md` (missing 1/(2π)); it matched only by coincidence, and the gap explanation is withdrawn. The corrected loop is underdamped (fn ≈ 0.9 MHz, ζ ≈ 0.33, PM ≈ 30-33°), consistent with the overshoot to ~0.92 V seen here. The 577 ns measurement is unaffected and **matches an independent averaged behavioural model (573 ns, `scripts/loop_check.py`)**.
+
 | Quantity | Measured | Target / Predicted |
 |---|---|---|
-| Lock time (vctrl enters and stays within ±2% of final value) | **577 ns** | <2µs (charter); ~450ns (analytical model) |
+| Lock time (vctrl enters and stays within ±2% of final value) | **577 ns** | <2µs (charter); 573 ns (independent averaged model; the original "450 ns analytical" is withdrawn) |
 | Settled vctrl | 0.902 V | 0.9 V design point |
 | Settled div_fb frequency | 28.515 MHz | f_ref = 28.275 MHz (0.85% high) |
 | Settled VCO output frequency | 227.96 MHz | N·f_ref = 226.2 MHz (0.78% high) |
 
-The small residual frequency offset (~0.8%) is consistent with normal charge-pump/PFD limit-cycle ripple in a real (non-ideal) type-II CP-PLL — not a bug. The 577ns vs. 450ns gap between measured and analytical lock time is reasonable: the analytical model is a continuous-time linearization that doesn't capture the PFD's reset delay or the charge pump's discrete pumping, both of which add real (if small) settling delay.
+The small residual frequency offset (~0.8%) is consistent with normal charge-pump/PFD limit-cycle ripple in a real (non-ideal) type-II CP-PLL — not a bug. The measured 577ns agrees with the independent averaged behavioural model (573 ns) run on the measured tuning curve from the same 0.85 V start, which is the check that matters. (Earlier text here attributed a 577-vs-450 ns gap to PFD reset delay and discrete pumping; that explanation is withdrawn together with the 450 ns figure.)
 
 Raw data: `run4_icfix.txt` is the accepted result. `run1_acquisition_deadzone.txt`, `run2_finelock.txt`, `run3_holdfix.txt` are kept as the debugging trail, not as results — see below.
 
@@ -33,10 +35,10 @@ Actual cause: `.ic v(vctrl)=0.85` was set, but the loop filter's own internal no
 
 ## What this result does and does not establish
 
-**Does establish:** the topology (PFD → behavioral CP → passive LF → transistor-level ring VCO → transistor-level ÷8 divider) closes into a working, locking negative-feedback loop, with lock dynamics in the right ballpark of the analytical model, at one operating point (tt corner, 27°C, starting near the nominal bias).
+**Does establish:** the topology (PFD → behavioral CP → passive LF → transistor-level ring VCO → transistor-level ÷8 divider) closes into a working, locking negative-feedback loop, with a lock time that matches an independent averaged behavioural model (573 ns vs 577 ns; the Review-1 closed-form prediction was erroneous, see erratum above), at one operating point (tt corner, 27°C, starting near the nominal bias).
 
 **Does not yet establish:**
 - Lock across PVT (this run is tt/27°C only — Review 2 scope).
-- Robustness to a cold start *outside* the VCO's confirmed-oscillating range. `run1_acquisition_deadzone.txt` (from before the IC fix, but still informative on this point) showed that starting below the VCO's ~0.65V oscillation floor drives the loop into a multi-microsecond charge-pump-integration dead zone before the divider even starts toggling — directly compounding the VCO lock-range finding from `results/vco/FINDINGS.md`. This remains a real, open risk for anything other than a "coarse-tuned start" — see `STATUS.md` decision #1.
+- Robustness to a cold start *outside* the VCO's usable range (below ~0.65V). `run1_acquisition_deadzone.txt` (from before the IC fix, but still informative on this point) showed that starting below ~0.65V (where the VCO is under 18 MHz, so the divided clock is effectively absent; there is no hard oscillation floor, corrected 2026-10-11) drives the loop into a multi-microsecond charge-pump-integration dead zone before the divider even starts toggling — directly compounding the VCO lock-range finding from `results/vco/FINDINGS.md`. This remains a real, open risk for anything other than a "coarse-tuned start" — see `STATUS.md` decision #1.
 - Any noise/jitter/phase-noise behavior (the charge pump is still the idealized behavioral model from `blocks/charge_pump/charge_pump.spice` — transistor-level CP with real mismatch is deferred to Review 2, where it's needed anyway for the Monte Carlo study).
 - PFD dead-zone quantified (the ~0.8% frequency offset is consistent with it, but not isolated and measured directly).

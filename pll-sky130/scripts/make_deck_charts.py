@@ -217,8 +217,8 @@ def build(prs, logo):
             [(c, D["tuning"][c], CC[c], "both") for c in ORDER],
             xt="Control voltage V_ctrl (V)", yt="VCO frequency (MHz)", xmin=0.6, xmax=1.4, ymin=0)
     legend(ch)
-    stat(s, X0, 5000000, 2500000, 1000000, "669 MHz/V", "K_VCO at 0.9 V (tt)")
-    stat(s, X0 + 2700000, 5000000, 2500000, 1000000, "≈ 0.63 V", "oscillation floor", RED)
+    stat(s, X0, 5000000, 2500000, 1000000, "887 MHz/V", "local K_VCO at 0.9 V (tt)")
+    stat(s, X0 + 2700000, 5000000, 2500000, 1000000, "< 18 MHz", "below 0.65 V (still oscillates)", RED)
     text(s, 5900000, 5050000, 5600000, 1000000, [
         "5-stage current-starved ring: V_ctrl sets the starving current, so it sets the delay per stage.",
         "Design point 0.9 V gives 226 MHz = 8 × 28.275 MHz reference."], size=12)
@@ -239,7 +239,7 @@ def build(prs, logo):
     picture(s, DIA / "acq_boost.png", X0, Y0, W, 2900000)
     text(s, X0, 4400000, W, 1700000, [
         ("Problem (open since Review 1)", True, NAVY),
-        "From a true 0 V start, V_ctrl sits below the 0.63 V oscillation floor: no VCO edges → divider silent → PFD sees only REF → slow pump-up.",
+        "From a true 0 V start the VCO is in deep subthreshold (0.6 MHz at 0.5 V, 6.5 MHz at 0.6 V, vs 226 MHz target): the divided clock is effectively absent → PFD sees only REF → slow pump-up at 20 µA.",
         ("Fix", True, NAVY),
         "Charge pump runs at 5 × I_cp until the divider's first edge, then a one-shot latch drops it to the nominal 20 µA. Result: lock in 839 ns from 0 V (< 2 µs spec)."],
         size=13)
@@ -264,7 +264,26 @@ def build(prs, logo):
     ch.chart_title.text_frame.paragraphs[0].runs[0].font.size = Pt(12)
     stat(s, 7400000, 4550000, 1950000, 1150000, "12.5×", "tempco spread sf→fs", RED)
     stat(s, 9550000, 4550000, 1950000, 1150000, "8.5 %", "tt span, −40→85 °C")
-    text(s, X0, 5850000, W, 400000, ["Every corner is far outside ±0.3 % uncompensated. N/P-mismatched corners (sf, fs) bracket the range."], size=12)
+    text(s, X0, 5850000, W, 400000, ["Every corner is far outside ±0.3 % uncompensated. Tempco ranks with NMOS drive: see next slide."], size=12)
+
+    # E2: why the corners order this way
+    s = S["why"] = new_slide(prs, "Why the Corners Order This Way", logo)
+    nmos = {"sf": 45.1, "ff": 42.8, "tt": 36.2, "ss": 30.3, "fs": 28.2}  # NMOS Id (uA), |Vgs|=0.9 V, W/L=2/0.5, 27 C
+    ch = xy(s, X0, Y0 - 100000, 6200000, 4500000,
+            [(f"{c}", [(nmos[c], D["tempco_ppm"][c])], CC[c], "marker") for c in ORDER],
+            xt="NMOS drive current at |Vgs| = 0.9 V (µA)", yt="Uncompensated tempco (ppm/°C)", xmin=26, xmax=48, ymin=0, ymax=1600)
+    for ser in ch.series:
+        ser.marker.size = 14
+    legend(ch, size=10)
+    text(s, 7000000, Y0, 4500000, 3300000, [
+        ("Reading the chart", True, NAVY),
+        "V_ctrl drives the NMOS starving gate directly and sets the PMOS bias through a mirror, so NMOS overdrive sets the ring current.",
+        "Less overdrive → the threshold-voltage drop with temperature is a bigger share of it and beats the mobility drop → stronger positive tempco.",
+        ("Corner labels in this PDK", True, NAVY),
+        "sf = fast-NMOS / slow-PMOS, fs = slow-NMOS / fast-PMOS. The skew corners shift NMOS Vth ±27 mV (ss/ff only ±15 mV), so they bracket the range."], size=12)
+    stat(s, 7000000, 4750000, 2150000, 1150000, "−816 ppm/°C", "tt tempco at V_ctrl = 1.4 V (sign flips)", TEAL, size=20)
+    stat(s, 9350000, 4750000, 2150000, 1150000, "+681 ppm/°C", "tt tempco at V_ctrl = 0.9 V", NAVY, size=20)
+    text(s, X0, 5900000, 6200000, 300000, ["Sign flip = a zero-tempco bias point exists between 0.9 and 1.4 V (textbook behaviour)."], size=11)
 
     # F: curvature
     s = S["curv"] = new_slide(prs, "Why Second Order? The Drift Is Curved", logo)
@@ -316,14 +335,38 @@ def build(prs, logo):
     ch = xy(s, X0, Y0 - 100000, 7600000, 4700000, [
         ("start 0.85 V (coarse-tuned): 577 ns", [tuple(p) for p in D["lock_coarse"]], TEAL, "line"),
         ("true 0 V cold start (boosted): 839 ns", [tuple(p) for p in D["lock_cold"]], NAVY, "line"),
-        hline(0.63, 0, 3000, "VCO floor 0.63 V", RED)],
+        hline(0.65, 0, 3000, "below 0.65 V the VCO is < 18 MHz", RED)],
         xt="Time (ns)", yt="V_ctrl (V)", xmin=0, xmax=3000, ymin=0, ymax=1.2)
     legend(ch, size=10)
     stat(s, 8500000, Y0, 3000000, 1100000, "839 ns", "lock from 0 V cold start")
     stat(s, 8500000, Y0 + 1250000, 3000000, 1100000, "577 ns", "lock from 0.85 V", TEAL)
-    stat(s, 8500000, Y0 + 2500000, 3000000, 1100000, "< 2 µs", "spec (analytic model: 450 ns)", GREEN)
+    stat(s, 8500000, Y0 + 2500000, 3000000, 1100000, "< 2 µs", "spec (averaged model: 573 ns)", GREEN)
     text(s, 8500000, Y0 + 3750000, 3000000, 900000,
          ["Lock = V_ctrl within ±2 % of 0.9 V and staying there."], size=11)
+    scope(s)
+
+    # J2: loop dynamics, honest numbers
+    s = S["loopdyn"] = new_slide(prs, "Loop Dynamics: Corrected Numbers", logo)
+    from loop_check import lock as avg_lock
+    _, tr = avg_lock(0.85)
+    avg = [(t * 1e9, v) for t, v in tr[::100] if t * 1e9 <= 3000]
+    ch = xy(s, X0, Y0 - 100000, 6000000, 4300000, [
+        ("transistor-level transient (577 ns)", [tuple(p) for p in D["lock_coarse"] if p[0] <= 3000], TEAL, "line"),
+        ("averaged behavioural model (573 ns)", avg, ORANGE, "dash")],
+        xt="Time (ns)", yt="V_ctrl (V)", xmin=0, xmax=3000, ymin=0.8, ymax=1.0)
+    legend(ch, size=10)
+    stat(s, 6900000, Y0, 2150000, 1050000, "ζ ≈ 0.33", "damping (Review 1 claimed 0.72)", RED, size=22)
+    stat(s, 9250000, Y0, 2250000, 1050000, "f_n ≈ 0.9 MHz", "natural freq. (claimed 2 MHz)", RED, size=20)
+    stat(s, 6900000, Y0 + 1200000, 2150000, 1050000, "≈ 30°", "phase margin (claimed 70°)", RED, size=22)
+    stat(s, 9250000, Y0 + 1200000, 2250000, 1050000, "573 vs 577 ns", "model vs transistor lock", GREEN, size=20)
+    text(s, 6900000, Y0 + 2450000, 4600000, 2200000, [
+        ("What was wrong", True, NAVY),
+        "Review 1 dropped the 1/(2π) of the charge-pump gain in ω_n², overstating ω_n by √(2π) and ζ likewise.",
+        ("What stands", True, NAVY),
+        "Simulated lock times (577 / 839 ns) are direct results; an independent model reproduces them. Spec < 2 µs met.",
+        ("Next", True, NAVY),
+        "Underdamped loop: retune R2 ≈ 3.6 kΩ for ζ ≈ 0.7 and re-verify (Review 3)."], size=11)
+    text(s, X0, 5500000, 6000000, 500000, ["Measured local K_VCO = 887 MHz/V (Review 1 used 669), so ζ = 0.33, not 0.29."], size=11)
     scope(s)
 
     # I: Monte Carlo charts
@@ -354,7 +397,7 @@ def build(prs, logo):
     # K: key numbers
     s = S["keynums"] = new_slide(prs, "Review 2 at a Glance", logo)
     nums = [("12.5×", "tempco spread across 5 corners (112→1399 ppm/°C)", RED),
-            ("669 MHz/V", "K_VCO at 0.9 V, tt", NAVY),
+            ("887 MHz/V", "local K_VCO at 0.9 V, tt", NAVY),
             ("1.12 %", "tt span after 2nd-order (was 8.51 %)", NAVY),
             ("2 / 5", "corners meeting ±0.3 % (ff, sf)", ORANGE),
             ("3.37 MHz", "Monte Carlo mean |drift| after 2nd-order (was 18.93)", TEAL),
@@ -387,11 +430,47 @@ def main(base, out):
     pic = next(sh for sh in arch.shapes if sh.shape_type == 13 and sh.width == W)
     picture(arch, DIA / "pll_block_diagram.png", pic.left, pic.top, pic.width, 3196694)
     pic._element.getparent().remove(pic._element)
+    sub = {  # exact paragraph text on the original slides -> corrected text
+        "VCO tuning: K_VCO ~= 669 MHz/V at 0.9V (polynomial fit, not a secant); 18->358 MHz over 0.65->1.40V. Oscillation lost below ~0.60-0.65V (device-threshold-limited).":
+            "VCO tuning: local K_VCO ~= 890 MHz/V at 0.9 V (tt, central difference +/-50 mV; an earlier whole-curve quadratic fit gave 669, too low); 18->358 MHz over 0.65->1.40 V. No hard floor: below 0.65 V the ring still oscillates, slowly (6.5 MHz at 0.6 V, 0.6 MHz at 0.5 V).",
+        "Sensitivity insight: N/P-mismatched corners (sf, fs) bracket the entire tempco range, not the matched-speed corners (ff, ss) -- points at current-source balance, not absolute device speed, as the driving mechanism.":
+            "Tempco ranks with NMOS drive at 0.9 V (sf 45 uA ... fs 28 uA): less overdrive => the threshold drop with temperature dominates => stronger positive tempco. Sign flips at V_ctrl = 1.4 V (-816 ppm/C). sf/fs bracket the range because sky130 skew corners shift NMOS Vth +/-27 mV (ss/ff +/-15 mV).",
+        "669": "887",
+        "(tt, 0.9V, fit-derivative)": "(tt, 0.9 V, local slope)",
+        "< 2us spec; ~450ns analytical": "< 2us spec; 573 ns averaged model",
+        "580.2": "582", "763.6": "936", "669.3": "887", "568.2": "815", "688.7": "1018",
+    }
+    for sl in old:
+        for sh in sl.shapes:
+            paras = [p for r in sh.table.rows for c in r.cells for p in c.text_frame.paragraphs] if sh.has_table \
+                else (sh.text_frame.paragraphs if sh.has_text_frame else [])
+            for p in paras:
+                t = p.text.strip()
+                new = sub.get(t)
+                if new is None and "they assume constant K_VCO, which is false." in t:
+                    new = t.replace("they assume constant K_VCO, which is false.", "they assume constant K_VCO (false) and used a K_VCO ~25% too low (669 vs 887 MHz/V).")
+                if new is None and "Transistor-level charge pump; layout in Magic" in t:
+                    new = ("Retune the loop (zeta ~0.33 now; R2 ~3.6 kOhm for zeta ~0.7) and re-verify lock; "
+                           "transistor-level charge pump; layout in Magic, DRC, LVS (netgen), post-layout re-simulation.")
+                if new is not None and p.runs:
+                    p.runs[0].text = new
+                    for r in p.runs[1:]:
+                        r.text = ""
+    for sh in old[6].shapes:  # slide 7 stat box: replace by run (paragraph text is split)
+        if sh.has_text_frame:
+            for p in sh.text_frame.paragraphs:
+                for r in p.runs:
+                    r.text = r.text.replace("fit-derivative", "local slope").replace("0.9V", "0.9 V")
+    for sh in old[6].shapes:  # slide 7 table: sf/fs NMOS/PMOS labels were backwards
+        if sh.has_table:
+            for row in sh.table.rows:
+                if row.cells[0].text in ("sf", "fs"):
+                    row.cells[1].text_frame.paragraphs[0].runs[0].text = "fast / slow" if row.cells[0].text == "sf" else "slow / fast"
     S = build(prs, logo)
     o = {i + 1: sl for i, sl in enumerate(old)}
     order = [o[1], o[2], o[3], o[4], o[5], S["vco"], S["comp_arch"], S["acq"], S["method"], o[6],
-             o[7], S["drift"], S["curv"], o[8], S["comp_tt"], S["comp_corners"],
-             o[9], S["lock"], o[10], S["mc"], S["keynums"], o[11], o[12], o[13]]
+             o[7], S["drift"], S["why"], S["curv"], o[8], S["comp_tt"], S["comp_corners"],
+             o[9], S["lock"], S["loopdyn"], o[10], S["mc"], S["keynums"], o[11], o[12], o[13]]
     lst = prs.slides._sldIdLst
     by_id = {el.get("id"): el for el in lst}
     els = [by_id[str(sl.slide_id)] for sl in order]

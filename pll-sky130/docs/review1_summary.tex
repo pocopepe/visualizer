@@ -46,9 +46,9 @@ Temperature compensation is a \emph{cancellation} problem: a correction network 
 \toprule
 \textbf{Quantity} & \textbf{Measured} & \textbf{Target / Reference} \\
 \midrule
-Closed-loop lock time & \textbf{577 ns} & $<2\,\mu$s spec; 450 ns analytical prediction \\
+Closed-loop lock time & \textbf{577 ns} & $<2\,\mu$s spec; 573 ns independent averaged model \\
 Settled VCO / divider frequency & 227.96 / 28.515 MHz & 226.2 / 28.275 MHz target \\
-$K_{VCO}$ (fit @ 0.9V) & $\approx$670 MHz/V & curve is nonlinear, not a bare secant \\
+$K_{VCO}$ (local, @ 0.9V) & $\approx$890 MHz/V & nonlinear curve; corrected from 670 (see erratum) \\
 Uncompensated tempco, ff / tt / ss & 332 / 681 / 1070 ppm/$^\circ$C & $>3\times$ spread across corners \\
 Divider ratio (measured) & 8.004 & target 8.000 \\
 \bottomrule
@@ -58,7 +58,7 @@ Divider ratio (measured) & 8.004 & target 8.000 \\
 \section{What we proved wrong (our own inherited spec, not the reference papers)}
 \begin{itemize}[leftmargin=1.3em, itemsep=1pt]
   \item \textbf{``$\pm0.15$\,ppm stability''} is not physically meaningful for a reference-locked PLL ($f_{out}=N f_{ref}$ exactly in lock) $\to$ restated as \textbf{$<\pm0.3\%$ residual VCO drift}, grounded against Souliotis et al.\ 2022's fabricated $-1.5\%/+0.4\%$.
-  \item \textbf{$V_{ctrl}$ floor of 0.27\,V} is unreachable --- this ring-VCO is device-threshold-limited, measured floor $\approx$0.6--0.65\,V $\to$ spec revised to \textbf{0.63\,V}.
+  \item \textbf{$V_{ctrl}$ floor of 0.27\,V} is unreachable --- this ring-VCO is device-threshold-limited, VCO is $<18$\,MHz below $\approx$0.65\,V (no hard cutoff) $\to$ spec revised to \textbf{0.63\,V}.
   \item A single scalar compensation ratio $C$ doesn't hold given the $>3\times$ corner spread $\to$ \textbf{$C$ locked as per-corner}.
 \end{itemize}
 
@@ -70,7 +70,10 @@ Divider ratio (measured) & 8.004 & target 8.000 \\
 \end{itemize}
 
 \begin{finding}
-\textbf{Bottom line:} the loop locks, in budget, with the analytical model agreeing to the right order of magnitude, and every specification gap found was caught with real simulation data, not assumed. Full detail, all raw numbers, and two documented root-cause debugging stories: \texttt{RESULTS.md} and \texttt{review1\_report.pdf} in the project repository.
+\textbf{Bottom line:} the loop locks, in budget, with the measured lock time matching an independent averaged behavioural model (573 ns vs.\ 577 ns), and every specification gap found was caught with real simulation data, not assumed. Full detail, all raw numbers, and two documented root-cause debugging stories: \texttt{RESULTS.md} and \texttt{review1\_report.pdf} in the project repository.
+
+\smallskip
+\noindent\textbf{Erratum (2026-10-11).} As first issued this summary quoted a ``450 ns analytical prediction'' and $K_{VCO}\approx$670 MHz/V (and the loop filter was reported as $f_n\approx$2 MHz, $\zeta\approx$0.72, PM 70--72$^\circ$). The loop-filter formula had dropped a $1/2\pi$; correct values are $f_n\approx$0.9 MHz, $\zeta\approx$0.33, PM $\approx$30--33$^\circ$ (underdamped), and the local $K_{VCO}$ at 0.9 V is $\approx$890 MHz/V. Simulated results (577 ns lock) are unchanged; $R_2$ retune is a Review~3 item. See \texttt{docs/loop\_model.md}.
 \end{finding}
 
 \end{document}
