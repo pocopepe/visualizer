@@ -24,6 +24,13 @@ ARMS = {
     "1st_order": ("-2.163e-4", "0"),
     "2nd_order_refined": ("-1.321953e-4", "2.893555e-7"),
 }
+# Corrected coefficients (least-squares fit on the measured f(T,V) surface, scripts/comp_factorial.py); files in results/mc_v2,
+# baseline arm from results/mc.  Select with --v2.
+ARMS_V2 = {
+    "baseline": ("0", "0"),
+    "1st_order": ("-1.6228363e-4", "0"),
+    "2nd_order_refined": ("-1.5426443e-4", "4.1834805e-7"),
+}
 PAT = re.compile(r"tt_T(?P<temp>-?\d+)_k1(?P<k1>[^_]+)_k2(?P<k2>[^_]+)_seed(?P<seed>\d+)\.txt$")
 
 
@@ -36,10 +43,10 @@ def freq(path):
         return None
 
 
-def load(mc_dir):
+def load(mc_dir, extra_dirs=()):
     drift = {}  # (arm, seed) -> f(85) - f(-40)
     temps = {}
-    for f in glob.glob(f"{mc_dir}/*.txt"):
+    for f in [g for d in (mc_dir, *extra_dirs) for g in glob.glob(f"{d}/*.txt")]:
         m = PAT.search(f)
         if not m:
             continue
@@ -58,8 +65,11 @@ def paired(drift, a, b):
     return [drift[(a, s)] for s in seeds], [drift[(b, s)] for s in seeds]
 
 
-def main(mc_dir="results/mc"):
-    drift = load(mc_dir)
+def main(mc_dir="results/mc", v2=False):
+    global ARMS
+    if v2:
+        ARMS = ARMS_V2
+    drift = load(mc_dir, ("results/mc",) if v2 else ())
     for arm in ARMS:
         vals = [v for (a, _), v in drift.items() if a == arm]
         if not vals:
@@ -85,4 +95,6 @@ def main(mc_dir="results/mc"):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "results/mc")
+    v2 = "--v2" in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    main(args[0] if args else ("results/mc_v2" if v2 else "results/mc"), v2)

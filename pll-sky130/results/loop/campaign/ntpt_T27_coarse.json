@@ -1,0 +1,16 @@
+{
+ "case": "ntpt_T27_coarse",
+ "corner": "ntpt",
+ "lib": "fact",
+ "temp_C": 27,
+ "start": "coarse",
+ "lock_ns": 503.1,
+ "vctrl_final_V": 0.9,
+ "f_vco_MHz": 226.175,
+ "f_err_pct": -0.011,
+ "ripple_mV": 0.19,
+ "peak_V": 0.922,
+ "drift_last_us_mV": 0.04,
+ "tstop_ns": 5000,
+ "settled": true
+}

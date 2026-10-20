@@ -12,6 +12,12 @@ Found by independent re-checks (`scripts/loop_check.py`, `results/vco/kvco_fine/
 5. **Loop filter retuned (R2 1.7 kΩ → 3.6 kΩ) and verified, 2026-10-11** — see "Review 2 errata" checklist below and `results/loop/FINDINGS_RETUNE.md`.
 6. **Unchanged:** spans/tempcos (112/332/681/1070/1399 ppm/°C, 12.5×), 2nd-order spans, held-out checks, Monte Carlo statistics, open-loop results (the retune only touches closed-loop numbers), per-corner C values, empirically refit compensation coefficients, tuning range 18 → 358 MHz. Closed-loop lock times 577 ns / 839 ns are the original R2 = 1.7 kΩ design (retuned: 503 / 1352 ns).
 
+## Errata (2026-10-20) -- final-review audit (see `results/final_numbers.md`, `results/corner_audit/FINDINGS.md`, `results/comp/FINDINGS_FINAL.md`)
+6. **Compensation coefficients were mis-estimated** (K_VCO error). Corrected fit: tt span 8.51 % -> 0.20 % (max dev 0.16 %, spec met); 8 of 11 corners meet +/-0.3 % (not 2 of 5). Supersedes the Review-2 per-corner table.
+7. **Monte Carlo with correct coefficients (n = 72):** both networks cut drift 20.1 -> 3.2 / 2.8 MHz; 2nd order is NOT significantly better than 1st (0.49 MHz, CI [-0.26, 1.24]). Residual is a mismatch floor of ~1.2-1.4 %.
+8. **Corner audit:** the PDK's skew corners are wider than ss/ff (NMOS Vth +/-36 mV vs +/-25 mV), so they fall outside the ss-ff envelope at the 0.9 V bias point; added a textbook 3x3 NMOS x PMOS corner set (reproduces PDK ss/tt/ff exactly), all ordering checks pass.
+9. **Closed-loop campaign (28 runs, R2 = 3.6 kOhm):** locks at all 11 corners at 27 C (177-1675 ns); f_VCO = 8 x f_ref in every run; **ss at 85 C cold start 2083 ns misses the 2 us spec by 4 %.**
+
 ## Environment (done)
 - [x] ngspice-42, Magic 8.3.105, KLayout 0.28.16 installed natively (apt), headless-capable
 - [x] sky130 PDK (sky130B variant) pulled via volare, pinned to commit `c6d73a35f524070e85faff4a6a9eef49553ebc2b`

@@ -16,3 +16,6 @@ OLS slope with 95% CI (t-dist, df=n-2) and R². Pre-register the null *before* l
 
 ## Novelty verification note
 This methodology research pass also verified (separately, see `PROJECT_CHARTER.md` §3.4) that "linear + quadratic temperature compensation for oscillators" is patented generically (US 9,748,962 B2, Infineon, 2017) — reframed our second-order compensation claim to the narrower, still-open composite: ring-VCO + closed-loop PLL + open PDK + statistically-validated quantification.
+
+## Update 2026-10-20: second correction, and a sample-size result
+The 1st-order arm used in the n = 30 comparison had been tuned with a wrong K_VCO (669 instead of ~890 MHz/V) and over-corrected (signed mean drift -5.7 MHz), so "2nd order significantly better" compared against a mis-tuned arm. Both arms were re-derived from a least-squares fit on the measured f(T, V) surface (`scripts/comp_factorial.py`) and the Monte Carlo was re-run. At n = 30 the 1st-vs-2nd difference was 1.05 MHz, CI [-0.14, 2.24] (not significant); the SD of paired differences (~3.2 MHz) gave n ~ 72 for 80 % power, so n = 72 was run: 0.49 MHz, CI [-0.26, 1.24], paired t and Wilcoxon not significant, 2nd order smaller in 40/72 chips. Baseline vs either network remains hugely significant (17 MHz, 71-72/72 chips). Lesson: a significance result is only as good as the tuning of the arms compared.

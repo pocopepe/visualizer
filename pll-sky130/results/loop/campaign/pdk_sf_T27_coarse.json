@@ -1,0 +1,16 @@
+{
+ "case": "pdk_sf_T27_coarse",
+ "corner": "sf",
+ "lib": "pdk",
+ "temp_C": 27,
+ "start": "coarse",
+ "lock_ns": 419.3,
+ "vctrl_final_V": 0.8694,
+ "f_vco_MHz": 226.175,
+ "f_err_pct": -0.011,
+ "ripple_mV": 0.08,
+ "peak_V": 0.929,
+ "drift_last_us_mV": 0.0,
+ "tstop_ns": 5000,
+ "settled": true
+}

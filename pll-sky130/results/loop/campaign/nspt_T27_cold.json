@@ -1,0 +1,16 @@
+{
+ "case": "nspt_T27_cold",
+ "corner": "nspt",
+ "lib": "fact",
+ "temp_C": 27,
+ "start": "cold",
+ "lock_ns": 1531.2,
+ "vctrl_final_V": 0.9437,
+ "f_vco_MHz": 226.175,
+ "f_err_pct": -0.011,
+ "ripple_mV": 0.14,
+ "peak_V": 1.048,
+ "drift_last_us_mV": 0.01,
+ "tstop_ns": 5000,
+ "settled": true
+}

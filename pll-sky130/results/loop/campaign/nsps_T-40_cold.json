@@ -1,0 +1,16 @@
+{
+ "case": "nsps_T-40_cold",
+ "corner": "nsps",
+ "lib": "fact",
+ "temp_C": -40,
+ "start": "cold",
+ "lock_ns": 1632.8,
+ "vctrl_final_V": 0.9687,
+ "f_vco_MHz": 226.174,
+ "f_err_pct": -0.012,
+ "ripple_mV": 0.09,
+ "peak_V": 1.078,
+ "drift_last_us_mV": 0.0,
+ "tstop_ns": 5000,
+ "settled": true
+}

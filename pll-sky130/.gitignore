@@ -58,3 +58,20 @@ results/loop/retune_corners/*.log
 results/loop/retune_corners/.done
 results/loop/retune_corners/.analyzed
 results/loop/retune_corners/.ss5
+
+results/loop/campaign/*.txt
+results/loop/campaign/*.log
+
+results/comp/factorial/raw/
+
+results/mc_v2/*.txt
+results/mc_v2/*.log
+
+# raw ngspice outputs of the final-review campaigns (regenerate with the scripts named in results/final_numbers.md)
+results/comp/factorial/raw/
+results/corner_audit/raw/
+results/vco/factorial/*.txt
+results/vco/factorial/*.log
+results/vco/factorial/*.cir
+results/vco/kvco_fine/*.txt
+results/vco/floor_check/*.txt

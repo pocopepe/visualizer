@@ -1,0 +1,117 @@
+{
+ "tables": {
+  "f(0.9 V, 27C) MHz": {
+   "nsps": 177.993,
+   "nspt": 187.997,
+   "nspf": 195.911,
+   "ntps": 211.768,
+   "ntpt": 226.206,
+   "ntpf": 238.082,
+   "nfps": 242.85,
+   "nfpt": 262.71,
+   "nfpf": 279.178
+  },
+  "f(1.4 V, 27C) MHz": {
+   "nsps": 300.17,
+   "nspt": 340.426,
+   "nspf": 378.102,
+   "ntps": 314.698,
+   "ntpt": 358.053,
+   "ntpf": 398.83,
+   "nfps": 327.511,
+   "nfpt": 373.627,
+   "nfpf": 417.198
+  },
+  "tempco ppm/C @0.9V": {
+   "nsps": 1069.7499339861674,
+   "nspt": 1117.5497481342786,
+   "nspf": 1150.7674403172875,
+   "ntps": 648.3321370556461,
+   "ntpt": 680.7600152073771,
+   "ntpf": 703.2198990263859,
+   "nfps": 305.86781964175407,
+   "nfpt": 325.0428228845497,
+   "nfpf": 331.9745825244103
+  },
+  "K_VCO MHz/V @0.9V": {
+   "nsps": 814.9699999999998,
+   "nspt": 917.6099999999999,
+   "nspf": 1003.1299999999999,
+   "ntps": 757.4900000000002,
+   "ntpt": 887.0400000000001,
+   "ntpf": 997.62,
+   "nfps": 655.24,
+   "nfpt": 804.0100000000001,
+   "nfpf": 935.6900000000002
+  },
+  "K_VCO/f  1/V @0.9V": {
+   "nsps": 4.578663205856409,
+   "nspt": 4.880982143332074,
+   "nspf": 5.120335254273623,
+   "ntps": 3.5769804691927027,
+   "ntpt": 3.921381395718947,
+   "ntpf": 4.190236977175931,
+   "nfps": 2.6981264154828084,
+   "nfpt": 3.0604468805907663,
+   "nfpf": 3.3515893086131436
+  }
+ },
+ "checks": [
+  [
+   "f(0.9 V, 27C) MHz: increases with NMOS strength (each PMOS state)",
+   true
+  ],
+  [
+   "f(0.9 V, 27C) MHz: increases with PMOS strength (each NMOS state)",
+   true
+  ],
+  [
+   "f(0.9 V, 27C) MHz: nsps is the minimum, nfpf the maximum of the 9",
+   true
+  ],
+  [
+   "f(1.4 V, 27C) MHz: increases with NMOS strength (each PMOS state)",
+   true
+  ],
+  [
+   "f(1.4 V, 27C) MHz: increases with PMOS strength (each NMOS state)",
+   true
+  ],
+  [
+   "f(1.4 V, 27C) MHz: nsps is the minimum, nfpf the maximum of the 9",
+   true
+  ],
+  [
+   "tempco decreases with NMOS strength (each PMOS state)",
+   true
+  ],
+  [
+   "tempco: nfpf < ntpt < nsps",
+   true
+  ],
+  [
+   "f(0.9 V, 27C) MHz: PDK sf inside [ss, ff] envelope",
+   true
+  ],
+  [
+   "f(0.9 V, 27C) MHz: PDK fs inside [ss, ff] envelope",
+   true
+  ],
+  [
+   "f(1.4 V, 27C) MHz: PDK sf inside [ss, ff] envelope",
+   true
+  ],
+  [
+   "f(1.4 V, 27C) MHz: PDK fs inside [ss, ff] envelope",
+   true
+  ],
+  [
+   "tempco: PDK sf (112) inside [ff, ss] = [332, 1070]",
+   false
+  ],
+  [
+   "tempco: PDK fs (1399) inside [ff, ss] = [332, 1070]",
+   false
+  ]
+ ]
+}

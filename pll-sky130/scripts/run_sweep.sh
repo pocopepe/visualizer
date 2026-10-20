@@ -8,6 +8,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/env/pdk.env" >/dev/null
+SPICE_MODELS="${MODELS_OVERRIDE:-$SPICE_MODELS}"   # e.g. env/sky130_factorial.lib.spice for the 3x3 textbook corners
 
 OUTDIR=$1; JOBS=$2; shift 2
 mkdir -p "$OUTDIR"

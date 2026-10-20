@@ -1,0 +1,16 @@
+{
+ "case": "nsps_T27_coarse",
+ "corner": "nsps",
+ "lib": "fact",
+ "temp_C": 27,
+ "start": "coarse",
+ "lock_ns": 966.8,
+ "vctrl_final_V": 0.9678,
+ "f_vco_MHz": 226.174,
+ "f_err_pct": -0.012,
+ "ripple_mV": 0.09,
+ "peak_V": 1.007,
+ "drift_last_us_mV": 0.01,
+ "tstop_ns": 5000,
+ "settled": true
+}

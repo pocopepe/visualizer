@@ -1,0 +1,16 @@
+{
+ "case": "ntpf_T27_cold",
+ "corner": "ntpf",
+ "lib": "fact",
+ "temp_C": 27,
+ "start": "cold",
+ "lock_ns": 1318.1,
+ "vctrl_final_V": 0.8884,
+ "f_vco_MHz": 226.183,
+ "f_err_pct": -0.007,
+ "ripple_mV": 0.14,
+ "peak_V": 0.986,
+ "drift_last_us_mV": 0.0,
+ "tstop_ns": 5000,
+ "settled": true
+}
