@@ -38,4 +38,4 @@ sf/fs labels were reversed; tempco mechanism rewritten; K_VCO was 669, really ~8
 | Paper draft + artifact release | after the above |
 
 ## Files to bring
-`Design_of_a_Frequency_Synthesiser_Review-2.pptx/.pdf` (27 slides) and `Review-2_Reading_Guide.pdf` (cheatsheet) are in the repo root. Slide sources: `scripts/make_figdata.py` -> `scripts/make_figures.py` -> `scripts/make_deck_charts.py`.
+All in `docs/reviews/`: `Design_of_a_Frequency_Synthesiser_Final_Review.pptx/.pdf` (35 slides), `Final_Review_Reading_Guide.pdf` (21 pages), `Final_Proposal_and_Findings.pdf` (19 pages); earlier: `Design_of_a_Frequency_Synthesiser_Review-2.pptx/.pdf`, `Review-2_Reading_Guide.pdf`, `review1_report.pdf`, `review1_summary.pdf`. Slide sources: `scripts/make_figdata.py` -> `make_figures.py` / `make_audit_figures.py` / `make_final_figures.py` -> `make_deck_charts.py` / `make_final_deck.py` (see `docs/REGENERATING.md`).

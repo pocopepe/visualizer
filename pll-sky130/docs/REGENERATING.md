@@ -16,6 +16,6 @@ The repository tracks **summaries** (`.csv`, `.json`, `.md`, figures) but not th
 | Closed-loop campaign (28 runs, R2 = 3.6 kOhm) | `python3 scripts/closed_loop_campaign.py` (~40 min on 16 cores) | `results/loop/campaign/summary.csv` and per-case `.json` |
 | R2 retune study | commands in `results/loop/FINDINGS_RETUNE.md` | `results/loop/retune*/` |
 | Figure data and figures | `python3 scripts/make_figdata.py` (needs the raw dumps above), `make_figures.py`, `make_audit_figures.py`, `make_final_figures.py`, `make_final_numbers.py` | `results/figdata.json` (tracked), `docs/figures/*.png`, `results/final_numbers.md` |
-| Decks and guides | `scripts/make_deck_charts.py`, `scripts/make_final_deck.py`; LaTeX in `docs/*/` | files under `docs/reviews/` |
+| Decks and guides | `scripts/make_final_deck.py` (writes `docs/reviews/*.pptx`; convert with `soffice --headless --convert-to pdf`); LaTeX in `docs/final_review_guide/`, `docs/final_proposal/`, `docs/review2_guide/`, `docs/review1_*.tex` (build with `pdflatex` twice, then copy the PDF to `docs/reviews/`) | files under `docs/reviews/` |
 
 `results/figdata.json` and `results/final_numbers.md` already contain every number the figures and tables use, so the documents can be rebuilt without re-running simulations (except `make_figdata.py` itself).

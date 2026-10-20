@@ -136,8 +136,8 @@ SPECS WE INHERITED AND HAD TO CORRECT
 WHERE TO LOOK FOR MORE
 --------------------------
   RESULTS.md               -- all the numbers + the research framing, short
-  docs/review1_summary.pdf -- 2-page version for showing a professor
-  docs/review1_report.pdf  -- the full 10-page detailed report
+  docs/reviews/review1_summary.pdf -- 2-page version for showing a professor
+  docs/reviews/review1_report.pdf  -- the full 10-page detailed report
   STATUS.md                -- what's done, what's next (Review 2, 3)
   PROJECT_CHARTER.md       -- the "why," the locked decisions, the risks
   results/vco/FINDINGS.md  -- VCO-specific deep dive

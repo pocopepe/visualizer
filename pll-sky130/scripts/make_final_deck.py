@@ -21,8 +21,8 @@ from pptx.enum.text import PP_ALIGN  # noqa: E402
 from pptx.util import Pt  # noqa: E402
 
 REPO = ROOT.parent
-BASE = REPO / "Design_of_a_Frequency_Synthesiser_Review-2.pptx"
-OUT = REPO / "Design_of_a_Frequency_Synthesiser_Final_Review.pptx"
+BASE = ROOT / "docs/reviews/Design_of_a_Frequency_Synthesiser_Review-2.pptx"
+OUT = ROOT / "docs/reviews/Design_of_a_Frequency_Synthesiser_Final_Review.pptx"
 D = H.D
 
 # ---------- data ----------

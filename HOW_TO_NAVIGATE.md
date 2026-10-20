@@ -39,8 +39,8 @@ visualizer/
     │   └── loop/FINDINGS.md    <- closed-loop lock deep-dive (the two debugging stories)
     └── docs/
         ├── loop_model.md       <- the analytical loop-design math
-        ├── review1_report.pdf  <- full 10-page Review 1 report
-        ├── review1_summary.pdf <- 2-page faculty-facing summary
+        ├── reviews/review1_report.pdf  <- full 10-page Review 1 report
+        ├── reviews/review1_summary.pdf <- 2-page faculty-facing summary
         └── diagrams/           <- circuit diagram sources (circuitikz/tikz) + rendered PNGs
 ```
 

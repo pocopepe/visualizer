@@ -89,3 +89,10 @@ env/factorial/
 blocks/**/_run*.cir
 blocks/**/_sanity*.cir
 blocks/**/run.log
+
+# compiled LaTeX outputs: the published copies live in docs/reviews/ (copy there after building)
+docs/final_proposal/*.pdf
+docs/final_review_guide/*.pdf
+docs/review2_guide/*.pdf
+docs/review1_report.pdf
+docs/review1_summary.pdf
