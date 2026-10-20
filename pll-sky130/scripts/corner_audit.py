@@ -16,9 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "results/corner_audit"
-SPICE_MODELS = os.environ.get(
-    "SPICE_MODELS",
-    "/home/pocopepe/pdk/volare/sky130/versions/c6d73a35f524070e85faff4a6a9eef49553ebc2b/sky130B/libs.tech/ngspice/sky130.lib.spice")
+SPICE_MODELS = os.environ.get("SPICE_MODELS") or os.path.join(os.environ.get("PDK_ROOT", os.path.expanduser("~/pdk")), "volare/sky130/versions", os.environ.get("PDK_VERSION", "c6d73a35f524070e85faff4a6a9eef49553ebc2b"), os.environ.get("PDK", "sky130B"), "libs.tech/ngspice/sky130.lib.spice")
 CORNERS = ["ss", "sf", "tt", "fs", "ff"]
 TEMPS = [-40, 27, 85]
 W, L = 2.0, 0.5

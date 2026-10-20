@@ -94,10 +94,10 @@ d = json.load(open("results/loop/demo_summary.json"))
 for k, v in d.items():
     print(f"  {k}: {v}")
 
-print("\n--- Claimed vs measured (this run) ---")
-print(f"  Lock time:       retuned loop (R2=3.6k) ~503ns; original 577ns | this run: {d.get('lock_time_ns')}ns   | spec: <2000ns")
-print(f"  Settled Vctrl:   claimed 0.902V  | this run: {d.get('settled_vctrl_V')}V")
-print(f"  VCO out freq:    claimed 227.96MHz | this run: {d.get('vco_out_freq_MHz')}MHz | target: {d.get('target_f_vco_MHz')}MHz")
+print("\n--- Reported (results/final_numbers.md) vs measured (this run) ---")
+print(f"  Lock time:       reported 503ns (R2=3.6k; original R2=1.7k design: 577ns) | this run: {d.get('lock_time_ns')}ns   | spec: <2000ns")
+print(f"  Settled Vctrl:   reported 0.900V  | this run: {d.get('settled_vctrl_V')}V")
+print(f"  VCO out freq:    reported 226.18MHz | this run: {d.get('vco_out_freq_MHz')}MHz | target: {d.get('target_f_vco_MHz')}MHz")
 PYEOF
 
 hr

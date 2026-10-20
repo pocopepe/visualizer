@@ -13,7 +13,7 @@ Binary: `$HOME/tools/netgen/bin/netgen`
 Usage:
 
     ~/tools/netgen/bin/netgen -batch lvs "a.spice cell" "b.spice cell" \
-      /home/pocopepe/pdk/volare/sky130/versions/c6d73a35f524070e85faff4a6a9eef49553ebc2b/sky130B/libs.tech/netgen/sky130B_setup.tcl out.txt
+      $PDK_ROOT/volare/sky130/versions/c6d73a35f524070e85faff4a6a9eef49553ebc2b/sky130B/libs.tech/netgen/sky130B_setup.tcl out.txt
 
 Verified (2026-10-11): two identical one-inverter SPICE netlists with the sky130B
 setup file give "Circuits match uniquely."

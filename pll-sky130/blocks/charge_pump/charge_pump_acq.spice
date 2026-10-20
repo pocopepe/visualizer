@@ -9,7 +9,7 @@
 * current-injection idiom already proven correct in charge_pump.spice
 * (including its node-order polarity lesson) instead of introducing a new
 * digital latch and its own metastable-initial-state risk.
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/digital/digital_cells.spice"
+.include "../digital/digital_cells.spice"
 
 .subckt CHARGE_PUMP_ACQ up dn div_fb ctrl vdd vss
 + icp=20u boost=5

@@ -13,7 +13,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "results/loop/campaign"
-PDKLIB = os.environ.get("SPICE_MODELS", "/home/pocopepe/pdk/volare/sky130/versions/c6d73a35f524070e85faff4a6a9eef49553ebc2b/sky130B/libs.tech/ngspice/sky130.lib.spice")
+PDKLIB = os.environ.get("SPICE_MODELS") or os.path.join(os.environ.get("PDK_ROOT", os.path.expanduser("~/pdk")), "volare/sky130/versions", os.environ.get("PDK_VERSION", "c6d73a35f524070e85faff4a6a9eef49553ebc2b"), os.environ.get("PDK", "sky130B"), "libs.tech/ngspice/sky130.lib.spice")
 FACT = str(ROOT / "env/sky130_factorial.lib.spice")
 TB = {"coarse": ROOT / "blocks/top/tb_closed_loop.spice", "cold": ROOT / "blocks/top/tb_closed_loop_coldstart.spice"}
 TSTOP_NS = 5000
@@ -50,6 +50,7 @@ def run(c):
     s = s.replace("v(vctrl) v(vco_out) v(div_fb) v(up) v(dn)", "v(vctrl) v(vco_out)")
     import re
     s = re.sub(r"\.tran 20p \d+n uic", f".tran 20p {TSTOP_NS}n uic", s)
+    s = s.replace('.include "../', f'.include "{ROOT}/blocks/')   # testbench copies live in results/: make the block includes absolute
     assert str(txt) in s and "r2=3.6k" in s and f".tran 20p {TSTOP_NS}n" in s, t
     s = s.replace("\n.control\n", "\n.control\n  set num_threads=1\n", 1)
     cir.write_text(s)

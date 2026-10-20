@@ -21,7 +21,7 @@ Found by independent re-checks (`scripts/loop_check.py`, `results/vco/kvco_fine/
 ## Environment (done)
 - [x] ngspice-42, Magic 8.3.105, KLayout 0.28.16 installed natively (apt), headless-capable
 - [x] sky130 PDK (sky130B variant) pulled via volare, pinned to commit `c6d73a35f524070e85faff4a6a9eef49553ebc2b`
-- [x] netgen — **built from source 2026-10-11** (the apt `netgen` is the wrong tool): `/home/pocopepe/tools/netgen/bin/netgen`, verified with the sky130B setup file on a test pair ("Circuits match uniquely"). Use the full path, `/usr/bin/netgen` is still the mesh generator. Install steps: `env/NETGEN.md`.
+- [x] netgen — **built from source 2026-10-11** (the apt `netgen` is the wrong tool): `~/tools/netgen/bin/netgen`, verified with the sky130B setup file on a test pair ("Circuits match uniquely"). Use the full path, `/usr/bin/netgen` is still the mesh generator. Install steps: `env/NETGEN.md`.
 - [x] Repo scaffold: `pll-sky130/{blocks,scripts,results,env,docs}`
 
 ## Review 1 checklist (target 50%) — **DONE**

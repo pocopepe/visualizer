@@ -3,11 +3,11 @@
 * boosted current until the divider's first edge) to close the
 * acquisition-dead-zone risk documented in results/loop/FINDINGS.md.
 .lib "__SPICE_MODELS__" tt
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/pfd/pfd.spice"
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/divider/divider.spice"
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/charge_pump/charge_pump_acq.spice"
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/loop_filter/loop_filter.spice"
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/vco/vco_ring.spice"
+.include "../pfd/pfd.spice"
+.include "../divider/divider.spice"
+.include "../charge_pump/charge_pump_acq.spice"
+.include "../loop_filter/loop_filter.spice"
+.include "../vco/vco_ring.spice"
 
 .temp 27
 Vdd vdd 0 DC 1.8

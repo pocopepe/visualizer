@@ -1,11 +1,11 @@
 * Closed-loop PLL: REF -> PFD -> Charge Pump -> Loop Filter -> VCO -> DIV8 -> back to PFD.
 * Design point and rationale: docs/loop_model.md
 .lib "__SPICE_MODELS__" tt
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/pfd/pfd.spice"
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/divider/divider.spice"
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/charge_pump/charge_pump.spice"
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/loop_filter/loop_filter.spice"
-.include "/home/pocopepe/code/visualizer/pll-sky130/blocks/vco/vco_ring.spice"
+.include "../pfd/pfd.spice"
+.include "../divider/divider.spice"
+.include "../charge_pump/charge_pump.spice"
+.include "../loop_filter/loop_filter.spice"
+.include "../vco/vco_ring.spice"
 
 .temp 27
 Vdd vdd 0 DC 1.8

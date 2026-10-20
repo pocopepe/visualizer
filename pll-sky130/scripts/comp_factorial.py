@@ -23,7 +23,7 @@ from make_figdata import freq  # noqa: E402
 
 OUT = ROOT / "results/comp/factorial"
 FACT = str(ROOT / "env/sky130_factorial.lib.spice")
-PDKLIB = os.environ.get("SPICE_MODELS", "/home/pocopepe/pdk/volare/sky130/versions/c6d73a35f524070e85faff4a6a9eef49553ebc2b/sky130B/libs.tech/ngspice/sky130.lib.spice")
+PDKLIB = os.environ.get("SPICE_MODELS") or os.path.join(os.environ.get("PDK_ROOT", os.path.expanduser("~/pdk")), "volare/sky130/versions", os.environ.get("PDK_VERSION", "c6d73a35f524070e85faff4a6a9eef49553ebc2b"), os.environ.get("PDK", "sky130B"), "libs.tech/ngspice/sky130.lib.spice")
 TEMPLATE = (ROOT / "blocks/vco/tb_comp_template.spice").read_text()
 VCO_INC = str(ROOT / "blocks/vco/vco_ring.spice")
 TEMPS = [-40, -20, 0, 27, 50, 85]

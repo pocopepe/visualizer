@@ -11,11 +11,12 @@ sky130_fd_pr__nfet_01v8 / pfet_01v8 model includes of corners/tt.spice.
 
 Output: env/sky130_factorial.lib.spice (+ env/factorial/corner_n?p?.spice).   Usage: make_factorial_lib.py
 """
+import os
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-NG = Path("/home/pocopepe/pdk/volare/sky130/versions/c6d73a35f524070e85faff4a6a9eef49553ebc2b/sky130B/libs.tech/ngspice")
+NG = Path(os.environ.get("PDK_ROOT", os.path.expanduser("~/pdk"))) / "volare/sky130/versions" / os.environ.get("PDK_VERSION", "c6d73a35f524070e85faff4a6a9eef49553ebc2b") / os.environ.get("PDK", "sky130B") / "libs.tech/ngspice"
 STATE = {"s": "ss", "t": "tt", "f": "ff"}
 
 
