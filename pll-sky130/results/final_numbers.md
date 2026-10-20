@@ -127,3 +127,13 @@
 | N slow | 4.58 | 4.88 | 5.12 |
 | N typ | 3.58 | 3.92 | 4.19 |
 | N fast | 2.70 | 3.06 | 3.35 |
+
+
+## Monte Carlo (tt, mismatch on, n = 72 chips, paired by seed; metric |f(85 C) - f(-40 C)|; results/comp/mc_v2_analysis.txt)
+
+    baseline (n=72): signed drift mean=20.112 MHz [19.180, 21.044], std=4.035 | |drift| mean=20.112 MHz [19.180, 21.044]
+    1st_order (n=72): signed drift mean=-0.832 MHz [-1.790, 0.126], std=4.146 | |drift| mean=3.249 MHz [2.629, 3.868]
+    2nd_order_refined (n=72): signed drift mean=-0.615 MHz [-1.373, 0.143], std=3.282 | |drift| mean=2.761 MHz [2.333, 3.188]
+    baseline vs 1st_order (n=72): |drift| reduction=16.863 MHz, 95% CI=[15.568, 18.159], paired-t significant=True, wilcoxon significant=True, 1st_order smaller in 71/72 seeds
+    baseline vs 2nd_order_refined (n=72): |drift| reduction=17.351 MHz, 95% CI=[16.367, 18.336], paired-t significant=True, wilcoxon significant=True, 2nd_order_refined smaller in 72/72 seeds
+    1st_order vs 2nd_order_refined (n=72): |drift| reduction=0.488 MHz, 95% CI=[-0.259, 1.235], paired-t significant=False, wilcoxon significant=False, 2nd_order_refined smaller in 40/72 seeds

@@ -29,5 +29,7 @@ for name, d in fa["tables"].items():
     for n, nn in zip("stf", ("N slow", "N typ", "N fast")):
         L.append(f"| {nn} | " + " | ".join(f"{d['n'+n+'p'+p]:.2f}" for p in "stf") + " |")
     L.append("")
+L += ["", "## Monte Carlo (tt, mismatch on, n = 72 chips, paired by seed; metric |f(85 C) - f(-40 C)|; results/comp/mc_v2_analysis.txt)", ""]
+L += ["    " + ln for ln in (ROOT / "results/comp/mc_v2_analysis.txt").read_text().splitlines() if ln.strip()]
 (ROOT / "results/final_numbers.md").write_text("\n".join(L))
 print("wrote results/final_numbers.md", len(L), "lines")
