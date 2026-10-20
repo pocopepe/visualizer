@@ -1,18 +1,0 @@
-Using SPARSE 1.3 as Direct Linear Solver
-
-Note: No compatibility mode selected!
-
-
-Circuit: * testbench: vco_ring free-running oscillation, single point
-
-Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
-
-Using transient initial conditions
- Reference value :  1.00000e-13 Reference value :  2.98398e-09 Reference value :  6.18398e-09 Reference value :  9.86398e-09 Reference value :  1.37340e-08 Reference value :  1.67740e-08 Reference value :  2.10840e-08 Reference value :  2.49440e-08 Reference value :  2.94340e-08 Reference value :  3.28840e-08 Reference value :  3.61940e-08 Reference value :  3.99040e-08 Reference value :  4.27140e-08 Reference value :  4.69940e-08 Reference value :  5.05440e-08 Reference value :  5.45440e-08 Reference value :  5.84640e-08 Reference value :  6.28540e-08 Reference value :  6.64440e-08 Reference value :  7.07040e-08 Reference value :  7.59940e-08 Reference value :  7.99240e-08 Reference value :  8.41840e-08 Reference value :  8.83140e-08 Reference value :  9.21640e-08 Reference value :  9.67140e-08 Reference value :  1.01814e-07 Reference value :  1.06674e-07 Reference value :  1.10304e-07 Reference value :  1.14954e-07 Reference value :  1.20094e-07 Reference value :  1.24844e-07 Reference value :  1.29304e-07 Reference value :  1.30974e-07 Reference value :  1.34094e-07 Reference value :  1.36364e-07 Reference value :  1.38684e-07 Reference value :  1.43204e-07 Reference value :  1.49034e-07 Reference value :  1.54834e-07 Reference value :  1.60514e-07 Reference value :  1.65644e-07 Reference value :  1.68624e-07 Reference value :  1.72254e-07 Reference value :  1.76484e-07 Reference value :  1.79284e-07 Reference value :  1.81934e-07 Reference value :  1.85324e-07 Reference value :  1.89864e-07 Reference value :  1.93544e-07 Reference value :  1.97104e-07 Reference value :  2.00444e-07 Reference value :  2.04434e-07 Reference value :  2.08134e-07 Reference value :  2.11624e-07 Reference value :  2.15464e-07 Reference value :  2.19294e-07 Reference value :  2.22534e-07 Reference value :  2.25364e-07 Reference value :  2.28804e-07 Reference value :  2.32724e-07 Reference value :  2.36244e-07 Reference value :  2.39524e-07 Reference value :  2.43544e-07 Reference value :  2.47444e-07 Reference value :  2.52694e-07 Reference value :  2.56874e-07 Reference value :  2.62524e-07 Reference value :  2.65524e-07 Reference value :  2.67944e-07 Reference value :  2.71074e-07 Reference value :  2.72404e-07 Reference value :  2.76014e-07 Reference value :  2.78894e-07 Reference value :  2.84664e-07 Reference value :  2.90304e-07 Reference value :  2.96764e-07 Reference value :  3.03554e-07 Reference value :  3.10824e-07 Reference value :  3.15804e-07 Reference value :  3.22184e-07 Reference value :  3.27814e-07 Reference value :  3.34234e-07 Reference value :  3.42504e-07 Reference value :  3.49034e-07 Reference value :  3.56554e-07 Reference value :  3.64174e-07 Reference value :  3.71614e-07 Reference value :  3.78804e-07 Reference value :  3.86544e-07 Reference value :  3.95894e-07
-No. of Data Rows : 40016
-
-  Measurements for Transient Analysis
-
-i_avg_a             =  3.757825e-05 from=  2.000000e-07 to=  4.000000e-07
-
-ngspice-42 done

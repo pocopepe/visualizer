@@ -75,3 +75,17 @@ results/vco/factorial/*.log
 results/vco/factorial/*.cir
 results/vco/kvco_fine/*.txt
 results/vco/floor_check/*.txt
+
+# ---- generated / raw artefacts (regenerate: docs/REGENERATING.md) ----
+# raw ngspice waveforms, logs and generated netlists under results/ (summaries .csv/.json/.md are tracked)
+results/**/*.txt
+results/**/*.log
+results/**/*.cir
+!results/comp/mc_v2_analysis.txt
+# generated corner library (contains local PDK paths): python3 scripts/make_factorial_lib.py
+env/sky130_factorial.lib.spice
+env/factorial/
+# per-run scratch netlists
+blocks/**/_run*.cir
+blocks/**/_sanity*.cir
+blocks/**/run.log

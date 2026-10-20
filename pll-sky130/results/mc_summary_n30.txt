@@ -1,7 +1,0 @@
-baseline (n=12): signed drift mean=18.927 MHz [16.201, 21.654], std=4.292 | |drift| mean=18.927 MHz [16.201, 21.654]
-1st_order (n=30): signed drift mean=-5.726 MHz [-7.050, -4.403], std=3.544 | |drift| mean=5.855 MHz [4.616, 7.094]
-2nd_order_refined (n=30): signed drift mean=2.331 MHz [0.939, 3.723], std=3.729 | |drift| mean=3.373 MHz [2.333, 4.413]
-
-baseline vs 1st_order (n=12): |drift| reduction=12.776 MHz, 95% CI=[9.981, 15.571], paired-t significant=True, wilcoxon significant=True, 1st_order smaller in 12/12 seeds
-baseline vs 2nd_order_refined (n=12): |drift| reduction=15.652 MHz, 95% CI=[12.646, 18.659], paired-t significant=True, wilcoxon significant=True, 2nd_order_refined smaller in 12/12 seeds
-1st_order vs 2nd_order_refined (n=30): |drift| reduction=2.482 MHz, 95% CI=[0.812, 4.152], paired-t significant=True, wilcoxon significant=True, 2nd_order_refined smaller in 23/30 seeds
