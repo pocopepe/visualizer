@@ -62,7 +62,7 @@ Consequence if it holds: an open-source flow can't be trusted to design a correc
 
 | Quantity | Measured | Target / Prediction |
 |---|---|---|
-| **Lock time** | **577 ns** | <2 µs (spec); 573 ns (independent averaged behavioural model, `scripts/loop_check.py`) |
+| **Lock time** | **577 ns** | <2 µs (spec); 573 ns (independent averaged behavioural model, `scripts/loop_check.py`) | *[Original R2 = 1.7 kOhm design; current R2 = 3.6 kOhm: tt 503 ns coarse / 1351 ns cold start, see results/final_numbers.md.]*
 | Settled V_ctrl | 0.902 V | 0.9 V design point |
 | Settled divider frequency | 28.515 MHz | 28.275 MHz (0.85% high) |
 | Settled VCO frequency | 227.96 MHz | 226.2 MHz (0.78% high) |
@@ -108,7 +108,7 @@ Novelty-checked before committing to this (see `PROJECT_CHARTER.md` §3.4): a 20
 | Baseline (uncompensated) | 8.51% | — |
 | 1st-order (PTAT/CTAT-equivalent) | 3.04% | 2.80× better |
 | 2nd-order, naive analytically-derived k2 | 4.49% | **worse than 1st-order** |
-| 2nd-order, empirically refined | **1.11%** | 7.67× better than baseline, 2.7× better than 1st-order |
+| 2nd-order, empirically refined | **1.11%** | 7.67× better than baseline, 2.7× better than 1st-order | *[Superseded 2026-10-20: original Review-2 value; current numbers in results/final_numbers.md.]*
 
 **The naive-2nd-order-is-worse result is itself real, reportable content**, not noise: the small-signal derivation of the quadratic coefficient assumes constant K_VCO, which breaks down because K_VCO is itself measurably nonlinear (see the VCO tuning curve above); additionally the analytic coefficient used K_VCO = 669 MHz/V where the local value at 0.9V is 887, over-estimating the needed correction ~1.3× (second reason it over-corrected). Refitting the coefficients against the *measured* post-1st-order residual (zero extra simulation — reused existing data) fixed it. Full writeup: `results/comp/FINDINGS.md`.
 
@@ -139,7 +139,7 @@ Monte Carlo mismatch (tt, arms paired by seed, tested on **|drift|** — the qua
 | 2nd-order refined | 30 | 3.37 MHz (1.5%) | [2.33, 4.41] |
 
 - Both compensation stages significantly reduce drift (12/12 seeds each, t-test and Wilcoxon agree).
-- **2nd-order is significantly better than 1st-order at n=30:** |drift| −2.48 MHz, 95% CI [0.81, 4.15], both tests agree, 23/30 seeds.
+- **2nd-order is significantly better than 1st-order at n=30:** |drift| −2.48 MHz, 95% CI [0.81, 4.15], both tests agree, 23/30 seeds. *[Superseded 2026-10-20: original Review-2 value; current numbers in results/final_numbers.md.]*
 - **Correction on record:** the first analysis tested *signed* drift and called 1st-vs-2nd significant at n=12 — mostly because 1st-order over-corrects (negative) and 2nd-order doesn't. On |drift| at n=12 it was *not* significant. The n=30 re-run is what earns the claim. See `docs/stats_methodology.md`.
 
 ---
@@ -150,7 +150,7 @@ Every checklist item resolved: delivered, or explicitly deferred to Review 3 wit
 
 ## Delivered
 
-- **Per-corner compensation generalizes.** All 5 corners refit independently: every corner improves at both stages; 2nd-order span 0.10% (ff) to 5.31% (fs); C spans 3.30×-40.28×. The fits are in-sample, so each was re-checked at 4 held-out temperatures never used in fitting — all held-out points stay inside the fitted envelope. `results/comp/FINDINGS_PERCORNER.md`.
+- **Per-corner compensation generalizes.** All 5 corners refit independently: every corner improves at both stages; 2nd-order span 0.10% (ff) to 5.31% (fs); C spans 3.30×-40.28×. The fits are in-sample, so each was re-checked at 4 held-out temperatures never used in fitting — all held-out points stay inside the fitted envelope. `results/comp/FINDINGS_PERCORNER.md`. *[Superseded 2026-10-20: original Review-2 value; current numbers in results/final_numbers.md.]*
 - **Against our own ±0.3% spec: met at ff (0.07%) and sf (0.15%) only.** tt 0.87%, ss 2.46%, fs 3.83% max deviation from 27°C. Closing this is Review-3 work (process-tracking transistor-level network and/or per-corner trim).
 - **2nd-order beats 1st-order under mismatch** — significant at n=30 on |drift| (see above).
 - **Cold-start acquisition — fixed and verified.** A 5×-boosted-current charge pump variant closes the multi-microsecond dead-zone risk flagged since Review 1. Simulated from a TRUE 0V cold start (not the coarse-tuned 0.85V assumption): **locks in 839ns** with the original R2 = 1.7 kΩ, inside the 2µs spec, on the first attempt (1352 ns after the R2 = 3.6 kΩ retune, also inside spec). `results/loop/FINDINGS_COLDSTART.md`, `results/loop/FINDINGS_RETUNE.md`.

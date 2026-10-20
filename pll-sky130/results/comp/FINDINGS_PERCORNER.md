@@ -1,5 +1,7 @@
 # Per-Corner Compensation — Does It Generalize?
 
+> **Superseded (2026-10-20):** the per-corner table and the "met at 2 of 5 corners (ff and sf only)" statement below are the original 5-corner fit with the old coefficients (and with sf/fs labels reversed). After the re-fit, 8 of 11 corners meet +/-0.3 %; current numbers: results/final_numbers.md, results/comp/FINDINGS_FINAL.md, results/corner_audit/FINDINGS.md.
+
 Review 2's first compensation pass (`results/comp/FINDINGS.md`) only proved the approach works at tt. Given the 12.5× corner-to-corner tempco spread (`results/vco/FINDINGS_GRID5CORNER.md`), that wasn't sufficient — a compensation network tuned to one corner's drift curve has no guaranteed relationship to another corner's curve. This refits k1 (analytically, per corner) then k2 (empirically refined from each corner's own measured 1st-order residual, same method as tt — zero extra simulation for the refinement step itself) independently for all 5 corners.
 
 ## Result: it generalizes, with real corner-to-corner variation in how well

@@ -1,5 +1,7 @@
 # H1 Regression Pipeline — Validated, Not Yet the Real Test
 
+> **Superseded (2026-10-20):** the alpha sweep below scales the original (old-coefficient) k1/k2, so its spans (1.12 % at alpha = 1) are the original record, not the re-fitted network (tt span 0.20 %). The alpha-vs-C fit is near-circular and is pipeline validation only; current numbers: results/final_numbers.md.
+
 `PROJECT_CHARTER.md` §2.1 hypothesis H1 needs ≥6-10 distinct (C, ε) points for a defensible regression (per `docs/stats_methodology.md`). Review 1 had exactly 2 (1st-order, 2nd-order). This extends the compensation-strength sweep (`docs/compensation_model.md`) to generate enough **C** values and proves the regression machinery works correctly — the actual H1 test still needs **ε** (ngspice-vs-Spectre disagreement), which is blocked on Virtuoso access.
 
 ## What was run

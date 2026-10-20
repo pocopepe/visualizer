@@ -72,18 +72,20 @@ DID IT WORK?
 -------------
 Yes. The loop LOCKS -- meaning after you turn it on, the VCO's voltage
 settles down and stops changing, and the VCO's frequency matches what it's
-supposed to (226 MHz-ish, 8x a 28.275MHz reference). It took 577
-nanoseconds to settle. The spec said it had to happen in under 2000
-nanoseconds (2 microseconds). We're comfortably inside budget.
+supposed to (226 MHz-ish, 8x a 28.275MHz reference). The original
+design took 577 nanoseconds to settle; [SUPERSEDED 2026-10-20] after the
+loop-filter retune (R2 = 3.6k) it is 503 ns from a coarse start and
+1351 ns from a cold start, and the loop locks at all 11 corners (the ss,
+85C cold start, 2083 ns, misses 2 us). See results/final_numbers.md.
+The spec is under 2000 nanoseconds (2 microseconds).
 
-We also checked the math (a pen-and-paper formula for how fast a PLL
-*should* lock) predicted ~450ns. Measured 577ns. Same ballpark -- good,
-that means our simulation isn't lying to us, it roughly agrees with
-theory.
+[WITHDRAWN 2026-10-11] The pen-and-paper formula's ~450ns prediction came
+from an arithmetic error and agreed with 577ns only by coincidence. The
+real cross-check is an independent averaged behavioural model (573 ns).
 
 THE BIG NUMBERS, TRANSLATED
 ------------------------------
-  K_VCO ~ 670 MHz per Volt
+  K_VCO ~ 890 MHz per Volt (local, tt; the old 670 was a whole-curve fit)
     -> "how much does the oscillator speed up per extra volt you feed it."
        Not a constant, it curves -- feed it more, it speeds up less and less
        (diminishing returns), like pressing a gas pedal that's less
@@ -130,8 +132,10 @@ SPECS WE INHERITED AND HAD TO CORRECT
   "The control voltage must be able to go as low as 0.27V" -- turns out
   physically impossible for this oscillator design (the transistor
   literally can't turn on that low). Not a mistake in our circuit, it's a
-  real physical limit of this approach. We adjusted the spec to match
-  reality (0.63V) instead of pretending the impossible number was fine.
+  real physical limit of this approach. [CORRECTED 2026-10-11] There is no
+  hard floor: the ring keeps oscillating below 0.63V, just far too slowly
+  (under 18 MHz below ~0.65V). The 0.63V lock-range floor is a practical
+  limit, not an oscillation limit.
 
 WHERE TO LOOK FOR MORE
 --------------------------

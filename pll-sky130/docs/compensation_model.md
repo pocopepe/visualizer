@@ -1,5 +1,7 @@
 # Compensation Network — Coefficient Derivation
 
+> **Superseded (2026-10-20):** the coefficients derived in this file are the original set (K_VCO = 669 MHz/V) and were re-fitted on the measured f(T,V) surface; current coefficients and spans (tt 0.20 %, 8 of 11 corners within +/-0.3 %): results/final_numbers.md and results/comp/FINDINGS_FINAL.md.
+
 Idealized model (see `blocks/vco/tb_comp_template.spice`): a correction voltage in series with Vctrl,
 
     vctrl_eff = vctrl_nom + k1*(T-27) + k2*(T-27)^2

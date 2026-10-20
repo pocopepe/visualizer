@@ -1,5 +1,7 @@
 # Temperature Compensation Network — First Results
 
+> **Superseded (2026-10-20):** the coefficients and spans below (tt 1.11 %, "significantly better" 2nd order at n=30, 23/30 seeds) came from the mis-estimated K_VCO (669 MHz/V) fit and are kept as the original Review-2 record. Re-fitted tt span is 0.20 % (max dev 0.16 %), and at n=72 Monte Carlo 2nd order is NOT significantly better than 1st (0.49 MHz, CI [-0.26, 1.24]); current numbers: results/final_numbers.md and results/comp/FINDINGS_FINAL.md.
+
 Idealized behavioral model (deliberate staging choice, same pattern as the Review 1 charge pump — see `blocks/vco/tb_comp_template.spice`, coefficients derived in `docs/compensation_model.md`). tt corner, Vctrl nominal 0.9V.
 
 ## Deterministic sweep (6 temperature points, -40 to 85°C)

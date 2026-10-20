@@ -5,7 +5,8 @@
 2. Averaged behavioural simulation (phase-domain, continuous-time) of the same
    loop driven by the *measured* tt/27C tuning curve, starting at 0.85 V
    and reporting the +/-2% lock time -- to compare against the 577 ns
-   from the full transistor-level transient.
+   from the full transistor-level transient (original R2 = 1.7 kOhm design; the
+   retuned R2 = 3.6 kOhm loop is checked in the 'measured local K_VCO' run).
 """
 import json
 import math

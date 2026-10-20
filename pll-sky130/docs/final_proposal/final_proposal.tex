@@ -105,7 +105,7 @@ Every result is produced by headless ngspice batch runs driven by Python scripts
 sky130 ships the corners ss, tt, ff and two skew corners sf, fs. During the final preparation we found that the VCO results did not look like textbook corners and audited them. We measured the devices directly (Table~\ref{tab:dev}) and found: (a) in this PDK \texttt{sf} is fast-NMOS/slow-PMOS and \texttt{fs} is slow-NMOS/fast-PMOS (measured; our earlier labels were reversed; the PDK documentation does not state it unambiguously); (b) the skew corners shift each device further than ss/ff do: extracted NMOS $V_{th}$ vs tt is $+25$ (ss), $-25$ (ff), $-36$ (sf), $+36$\,mV (fs), PMOS $|V_{th}|$ $+15$, $-23$, $+32$, $-43$\,mV. At the VCO bias (overdrive $\approx0.2$\,V) this becomes $\approx9\,\%$ in drive current, so the PDK skews lie outside the ss--ff envelope at 0.9\,V but inside it at 1.8\,V (NMOS $I_d$ within 1\,\%).
 
 \begin{table}[!htbp]\centering\small
-\input{tab_dev.tex}
+\resizebox{\linewidth}{!}{\input{tab_dev.tex}}
 \caption{Single-device audit at 27\degC\ (W/L = 2/0.5\,$\mu$m, ngspice~47). Skew corners fall outside the ss--ff band for the NMOS at 0.9\,V (25.3 and 51.3 vs 27.9 and 47.7\,$\mu$A). PMOS at 0.9\,V is sub-threshold.}\label{tab:dev}
 \end{table}
 
@@ -136,7 +136,7 @@ At 0.9\,V and 27\degC\ the frequency is 178.0/188.0/195.9 (N slow), 211.8/226.2/
 
 \subsection{Compensation on 11 corners}
 \begin{table}[!htbp]\centering\small\setlength{\tabcolsep}{4pt}
-\input{tab_comp_main.tex}
+\resizebox{\linewidth}{!}{\input{tab_comp_main.tex}}
 \caption{Compensation, nominal (no mismatch), ideal behavioural source, $\vc=0.9$\,V. ``Max dev'' is the maximum deviation from $f_{27}$ of the second-order-compensated VCO at the 6 fit temperatures; ``Held-out'' the same at $-30$, 10, 40, 70\degC.}\label{tab:comp}
 \end{table}
 \begin{figure}[!htbp]\centering\includegraphics[width=\linewidth]{final_comp_corners.png}\caption{Maximum deviation from $f_{27}$ (log scale) for the uncompensated, first-order and second-order cases at 11 corners.}\label{fig:compc}\end{figure}

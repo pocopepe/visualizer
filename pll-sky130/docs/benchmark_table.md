@@ -1,5 +1,7 @@
 # Benchmark Against Reference Literature
 
+> **Superseded (2026-10-20):** the "This work" rows below use original Review-2 numbers (577 ns lock, 1.11 % tt span). Current: tt lock 503 ns coarse / 1351 ns cold start with R2 = 3.6 kOhm, re-fitted tt span 0.20 %; see results/final_numbers.md.
+
 Only comparing against papers whose numbers were verified against the publisher record (DOI) — reference numbers match the Review-2 deck. Other references are omitted from this table because they measure different things (clock circuits, LC-VCO serial-link PLLs, GHz VCOs without compensation), not because their numbers are unknown.
 
 | Design | Process | Temp range | Residual tempco / stability | Lock time | Power |
